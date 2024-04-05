@@ -1,0 +1,1 @@
+# ETHGlobal Scaling Ethereum 2024 Decentralized Portfolio App
