@@ -1,0 +1,18 @@
+{
+  "name": "orbitdb-peer",
+  "version": "1.0.0",
+  "description": "Peer for OrbitDB database",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "John McLaughlin",
+  "license": "MIT",
+  "dependencies": {
+    "@chainsafe/libp2p-gossipsub": "^13.0.0",
+    "@orbitdb/core": "^2.1.0",
+    "blockstore-level": "^1.1.8",
+    "helia": "^4.1.0"
+  },
+  "type": "module"
+}
