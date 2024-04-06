@@ -16,8 +16,8 @@ const db = await orbitdb.open('my-documents-db', { type: 'documents' })
 console.log('orbit-one address', db.address)
 
 // Add some records to the db.
-await db.put({ _id: 'doc1', crying: 5, cats: "black", name: "MEEP" })
-await db.put({ _id: 'doc2', crying: 0, cats: "grey", name: "MEW" })
+await db.put({ _id: 'doc1', cats: "black", name: "MEEP", crying: 5, sleeping: 1, personality: "meepish" })
+await db.put({ _id: 'doc2', cats: "grey", name: "MEW", crying: 0, sleeping: 1, personality: "mewish" })
 
 
 // Print out the above records.
