@@ -16,7 +16,7 @@ async function reopenDatabase() {
         const orbitdb = await createOrbitDB({ ipfs });
 
         // Address of the existing OrbitDB database
-        const dbAddress = '/orbitdb/zdpuAv3Efoai6USwzVbYPFRNW881mSzgGaygwtKFmgbhHkXM1/position-db';
+        const dbAddress = '/orbitdb/zdpuAwbsoPUJjKBecyk4Ab7tojiLpUQKXanhFCvs9ieHSALMV/position-db';
 
         // Open the database
         const db = await orbitdb.open(dbAddress, {

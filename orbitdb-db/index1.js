@@ -149,6 +149,50 @@ app.get('/api/query/id', async (req, res) => {
     }
 });
 
+// app.post('/api/add-entry', async (req, res) => {
+//     try {
+//         // Extract data from the request body
+//         const { _id, asset, trade, quantity, price, date, rating } = req.body;
+
+//         // Check if there is a previous entry with the same _id
+//         const prevRecord = await db.get(_id);
+
+//         if (prevRecord) {
+//             // Include the previous hash in the new record
+//             const prevHash = prevRecord.hash;
+
+//             let updatedQuantity = quantity;
+//             let updatedPrice = price;
+
+//             if (trade === 'BUY' && asset === prevRecord.value.asset) {
+//                 // Update quantity based on trade type and asset
+//                 updatedQuantity += prevRecord.value.quantity;
+
+//                 // Calculate average price based on previous records and new trade price
+//                 const totalPrice = prevRecord.value.price * prevRecord.value.quantity;
+//                 const totalQuantity = prevRecord.value.quantity + quantity;
+//                 updatedPrice = (totalPrice + (price * quantity)) / totalQuantity;
+//             } else if (trade === 'SELL' && asset === prevRecord.value.asset) {
+//                 // Update quantity based on trade type and asset
+//                 updatedQuantity = prevRecord.value.quantity - quantity;
+//             }
+
+//             // Add the new entry to the database
+//             await db.put({ _id, asset, trade, quantity: updatedQuantity, price: updatedPrice, date, rating, prevHash });
+
+//             res.status(201).json({ message: 'Entry added successfully' });
+//         } else {
+//             // If there is no previous entry, add the new entry without a previous hash
+//             await db.put({ _id, asset, trade, quantity, price, date, rating });
+
+//             res.status(201).json({ message: 'Entry added successfully' });
+//         }
+//     } catch (error) {
+//         console.error(error);
+//         res.status(500).json({ message: 'Internal server error' });
+//     }
+// });
+
 app.post('/api/add-entry', async (req, res) => {
     try {
         // Extract data from the request body
@@ -178,20 +222,70 @@ app.post('/api/add-entry', async (req, res) => {
             }
 
             // Add the new entry to the database
-            await db.put({ _id, asset, trade, quantity: updatedQuantity, price: updatedPrice, date, rating, prevHash });
+            const newEntry = { _id, asset, trade, quantity: updatedQuantity, price: updatedPrice, date, rating, prevHash };
+            await db.put(newEntry);
 
-            res.status(201).json({ message: 'Entry added successfully' });
+            res.status(201).json(newEntry); // Return the added entry
         } else {
             // If there is no previous entry, add the new entry without a previous hash
-            await db.put({ _id, asset, trade, quantity, price, date, rating });
+            const newEntry = { _id, asset, trade, quantity, price, date, rating };
+            await db.put(newEntry);
 
-            res.status(201).json({ message: 'Entry added successfully' });
+            res.status(201).json(newEntry); // Return the added entry
         }
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Internal server error' });
     }
 });
+
+// Your existing code for setting up IPFS, OrbitDB, and adding records...
+
+app.get('/api/query/:id', async (req, res) => {
+    try {
+        const userId = req.params.id;
+        console.log('userId:', userId); // Add this line to log userId
+
+        // Query the database for documents with the specified _id
+        const userRecord = await db.get(userId);
+        console.log('userRecord:', userRecord); // Add this line to log userRecord
+
+        if (!userRecord) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Check if userRecord.value is an array before using array methods
+        if (!Array.isArray(userRecord.value)) {
+            return res.status(400).json({ message: 'Invalid data format' });
+        }
+
+        // Filter records to get the user's assets
+        const userAssets = userRecord.value.map(entry => entry.asset);
+
+        // Calculate current position and average price for each asset
+        const assetData = userAssets.reduce((result, asset) => {
+            const assetEntries = userRecord.value.filter(entry => entry.asset === asset);
+            const totalQuantity = assetEntries.reduce((total, entry) => total + entry.quantity, 0);
+            const totalValue = assetEntries.reduce((total, entry) => total + (entry.quantity * entry.price), 0);
+            const averagePrice = totalQuantity === 0 ? 0 : totalValue / totalQuantity;
+
+            result[asset] = {
+                currentPosition: totalQuantity,
+                averagePrice: isNaN(averagePrice) ? 0 : averagePrice
+            };
+
+            return result;
+        }, {});
+
+        res.json(assetData);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+// Your existing code for starting the Express server...
+
 
 // Start the Express server
 const PORT = process.env.PORT || 3000
