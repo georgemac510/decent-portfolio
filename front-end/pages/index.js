@@ -62,17 +62,31 @@ export default function Home() {
 
   const handleQuery = async (e) => {
     e.preventDefault();
-
+    
     try {
-      const response = await fetch(`http://localhost:3000/api/query?id=${queryData._id_query}&asset=${queryData.asset_query}`);
+      const response = await fetch(`http://localhost:3000/api/query/id?id=${queryData._id_query}`);
+    
+      if (!response.ok) {
+        throw new Error('Failed to query database');
+      }
+    
       const data = await response.json();
       console.log('Query result:', data);
-      setPostDataQuery(data);
-      setQueryResult(data);
+    
+      if (data.length > 0) {
+        setPostDataQuery(data[0]);
+        setQueryResult(data[0]);
+      } else {
+        setPostDataQuery(null);
+        setQueryResult(null);
+        console.log('No data found for the query.');
+      }
     } catch (error) {
       console.error('Error querying database:', error);
     }
   };
+  
+  
 
   return (
     <div>
@@ -158,14 +172,6 @@ export default function Home() {
           </div>
         )}
       </div>
-
-      {queryResult && (
-        <div>
-          <h2>Query Result</h2>
-          <p>Quantity: {queryResult.quantity}</p>
-          <p>Price: {queryResult.price}</p>
-        </div>
-      )}
     </div>
   );
 }
