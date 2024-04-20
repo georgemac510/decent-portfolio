@@ -6,7 +6,8 @@
     "body-parser": "^1.20.2",
     "cors": "^2.8.5",
     "express": "^4.19.2",
-    "helia": "^4.1.0"
+    "helia": "^4.1.0",
+    "libp2p": "^1.4.2"
   },
   "type": "module"
 }

@@ -70,6 +70,10 @@ app.use(bodyParser.json());
 // Use cors middleware
 app.use(cors());
 
+app.use(cors({
+    origin: 'http://localhost:3001'
+}));
+
 // Create an IPFS instance.
 const blockstore = new LevelBlockstore('./ipfs')
 const libp2p = await createLibp2p(Libp2pOptions)
