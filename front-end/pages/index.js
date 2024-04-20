@@ -95,7 +95,7 @@ export default function Home() {
             />
         </div>
         <div className={styles.entrySection}>
-        <h2>Add Entry</h2>
+        <h2>Add Transaction</h2>
         <form onSubmit={handleSubmit}>
         <label className={styles.label}>
             ID:
@@ -136,7 +136,7 @@ export default function Home() {
         </form>
         {postDataAddEntry && (
           <div>
-            <h3>Posted Data (Add Entry)</h3>
+            <h3>Last Transaction Data</h3>
             <p>ID: {postDataAddEntry._id}</p>
             <p>Asset: {postDataAddEntry.asset}</p>
             <p>Trade: {postDataAddEntry.trade}</p>
@@ -149,7 +149,7 @@ export default function Home() {
       </div>
 
       <div>
-        <h2>Query Database</h2>
+        <h2>Position Query</h2>
         <form onSubmit={handleQuery}>
         <label className={styles.label}>
             User ID:
