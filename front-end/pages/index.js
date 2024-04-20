@@ -85,8 +85,16 @@ export default function Home() {
 
   return (
     <div className={styles.container}>
-    <h1>Decent Portfolio <span role="img" aria-label="thumbs up">👍</span></h1>
-      <div>
+        <div className={styles.header}>
+            <h1>Decent Portfolio <span role="img" aria-label="thumbs up">👍</span></h1>
+            <iframe src="https://coin360.com/coin-widget?coin=bitcoin-btc&utm_source=embed_widget_coin" 
+                    width="25%" 
+                    height="252" 
+                    frameBorder="0"
+                    style={{ flexShrink: 0 }} // Ensures that the iframe doesn't shrink
+            />
+        </div>
+        <div className={styles.entrySection}>
         <h2>Add Entry</h2>
         <form onSubmit={handleSubmit}>
         <label className={styles.label}>
@@ -157,12 +165,12 @@ export default function Home() {
         </form>
         {postDataQuery && (
           <div>
-            <h2>Posted Data (Query Database)</h2>
+            <h2>Current Position</h2>
             <p>ID: {postDataQuery._id}</p>
             <p>Asset: {postDataQuery.asset}</p>
             <p>Trade: {postDataQuery.trade}</p>
             <p>Quantity: {postDataQuery.quantity}</p>
-            <p>Price: {postDataQuery.price}</p>
+            <p>Average Price: {postDataQuery.price}</p>
             <p>Date: {postDataQuery.date}</p>
             <p>Rating: {postDataQuery.rating}</p>
           </div>

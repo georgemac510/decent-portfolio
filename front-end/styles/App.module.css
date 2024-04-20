@@ -1,11 +1,34 @@
+/* App.module.css */
 .container {
-  min-height: 100vh; /* Use viewport height to ensure full screen height */
+  min-height: 100vh; /* Ensures the container uses at least the full height of the viewport */
   background-color: #4CAF50; /* Medium green background */
   color: white; /* White text */
   padding: 20px;
   font-family: Arial, sans-serif;
   display: flex;
   flex-direction: column; /* Organizes content vertically */
+}
+
+
+.header {
+  margin-top: -96px; 
+  display: flex; /* Aligns children (h1 and iframe) in a row */
+  align-items: center; /* Centers items vertically */
+  justify-content: space-between; /* Puts maximum space between items */
+  margin-bottom: 20px; /* Adds some space below the header */
+}
+
+/* If "Add Entry" is inside a div immediately following the header */
+.entrySection { /* Ensure this class is added to the div that contains the "Add Entry" form */
+  margin-top: -156px; /* Moves it up by approximately 1 inch */
+}
+
+
+/* App.module.css */
+.header iframe {
+  margin-top: 200px; /* Existing 24px (about 1/4 inch) + 96px (about 1 inch) */
+  transform: scale(0.67); /* Keeps the scaling if still needed */
+  transform-origin: top left;
 }
 
 .textInput {
@@ -31,3 +54,4 @@
 .submitButton:hover {
   opacity: 0.9;
 }
+
