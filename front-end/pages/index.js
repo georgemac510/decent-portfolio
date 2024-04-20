@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import styles from '../styles/App.module.css'; // Assuming you have a CSS file named App.css
 
 export default function Home() {
   const [formData, setFormData] = useState({
@@ -39,7 +40,6 @@ export default function Home() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     try {
       const response = await fetch('https://orbitdb-server.ngrok.dev/api/add-entry', {
         method: 'POST',
@@ -48,7 +48,7 @@ export default function Home() {
         },
         body: JSON.stringify(formData)
       });
-
+  
       if (response.ok) {
         console.log('Entry added successfully');
         setPostDataAddEntry(formData);
@@ -62,17 +62,13 @@ export default function Home() {
 
   const handleQuery = async (e) => {
     e.preventDefault();
-    
     try {
       const response = await fetch(`https://orbitdb-server.ngrok.dev/api/query/id?id=${queryData._id_query}`);
-    
       if (!response.ok) {
         throw new Error('Failed to query database');
       }
-    
       const data = await response.json();
       console.log('Query result:', data);
-    
       if (data.length > 0) {
         setPostDataQuery(data[0]);
         setQueryResult(data[0]);
@@ -86,53 +82,53 @@ export default function Home() {
     }
   };
   
-  
 
   return (
-    <div>
+    <div className={styles.container}>
+    <h1>Decent Portfolio <span role="img" aria-label="thumbs up">👍</span></h1>
       <div>
-        <h1>Add Entry</h1>
+        <h2>Add Entry</h2>
         <form onSubmit={handleSubmit}>
-          <label>
+        <label className={styles.label}>
             ID:
-            <input type="text" name="_id" value={formData._id} onChange={handleChange} />
+            <input type="text" name="_id" value={formData._id} onChange={handleChange} className={styles.textInput} />
           </label>
           <br />
-          <label>
+          <label className={styles.label}>
             Asset:
-            <input type="text" name="asset" value={formData.asset} onChange={handleChange} />
+            <input type="text" name="asset" value={formData.asset} onChange={handleChange} className={styles.textInput} />
           </label>
           <br />
-          <label>
+          <label className={styles.label}>
             Trade:
-            <input type="text" name="trade" value={formData.trade} onChange={handleChange} />
+            <input type="text" name="trade" value={formData.trade} onChange={handleChange} className={styles.textInput} />
           </label>
           <br />
-          <label>
+          <label className={styles.label}>
             Quantity:
-            <input type="text" name="quantity" value={formData.quantity} onChange={handleChange} />
+            <input type="text" name="quantity" value={formData.quantity} onChange={handleChange} className={styles.textInput} />
           </label>
           <br />
-          <label>
+          <label className={styles.label}>
             Price:
-            <input type="text" name="price" value={formData.price} onChange={handleChange} />
+            <input type="text" name="price" value={formData.price} onChange={handleChange} className={styles.textInput} />
           </label>
           <br />
-          <label>
+          <label className={styles.label}>
             Date:
-            <input type="text" name="date" value={formData.date} onChange={handleChange} />
+            <input type="text" name="date" value={formData.date} onChange={handleChange} className={styles.textInput} />
           </label>
           <br />
-          <label>
+          <label className={styles.label}>
             Rating:
-            <input type="text" name="rating" value={formData.rating} onChange={handleChange} />
+            <input type="text" name="rating" value={formData.rating} onChange={handleChange} className={styles.textInput} />
           </label>
           <br />
-          <button type="submit">Submit</button>
+          <button type="submit" className={styles.submitButton}>Submit</button>
         </form>
         {postDataAddEntry && (
           <div>
-            <h2>Posted Data (Add Entry)</h2>
+            <h3>Posted Data (Add Entry)</h3>
             <p>ID: {postDataAddEntry._id}</p>
             <p>Asset: {postDataAddEntry.asset}</p>
             <p>Trade: {postDataAddEntry.trade}</p>
@@ -145,19 +141,19 @@ export default function Home() {
       </div>
 
       <div>
-        <h1>Query Database</h1>
+        <h2>Query Database</h2>
         <form onSubmit={handleQuery}>
-          <label>
+        <label className={styles.label}>
             User ID:
-            <input type="text" name="_id_query" value={queryData._id_query} onChange={handleQueryDataChange} />
+            <input type="text" name="_id_query" value={queryData._id_query} onChange={handleQueryDataChange} className={styles.textInput} />
           </label>
           <br />
-          <label>
+          <label className={styles.label}>
             Asset:
-            <input type="text" name="asset_query" value={queryData.asset_query} onChange={handleQueryDataChange} />
+            <input type="text" name="asset_query" value={queryData.asset_query} onChange={handleQueryDataChange} className={styles.textInput} />
           </label>
           <br />
-          <button type="submit">Query</button>
+          <button type="submit" className={styles.submitButton}>Query</button>
         </form>
         {postDataQuery && (
           <div>
