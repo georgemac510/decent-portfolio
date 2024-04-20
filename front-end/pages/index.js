@@ -41,7 +41,7 @@ export default function Home() {
     e.preventDefault();
 
     try {
-      const response = await fetch('http://localhost:3000/api/add-entry', {
+      const response = await fetch('https://orbitdb-server.ngrok.dev/api/add-entry', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -64,7 +64,7 @@ export default function Home() {
     e.preventDefault();
     
     try {
-      const response = await fetch(`http://localhost:3000/api/query/id?id=${queryData._id_query}`);
+      const response = await fetch(`https://orbitdb-server.ngrok.dev/api/query/id?id=${queryData._id_query}`);
     
       if (!response.ok) {
         throw new Error('Failed to query database');

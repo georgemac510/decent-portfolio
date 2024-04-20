@@ -12,7 +12,8 @@
     "@chainsafe/libp2p-gossipsub": "^13.0.0",
     "@orbitdb/core": "^2.1.0",
     "blockstore-level": "^1.1.8",
-    "helia": "^4.1.0"
+    "helia": "^4.1.0",
+    "libp2p": "^1.4.2"
   },
   "type": "module"
 }
