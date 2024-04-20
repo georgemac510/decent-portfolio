@@ -68,11 +68,26 @@ const app = express()
 app.use(bodyParser.json());
 
 // Use cors middleware
-app.use(cors());
+const allowedOrigins = [
+    'https://decent-portfolio.vercel.app' // Vercel deployment URL
+];
 
-app.use(cors({
-    origin: 'http://localhost:3001'
-}));
+// Configuration for CORS
+const corsOptions = {
+  // Function to set the origin based on incoming requests
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  optionsSuccessStatus: 200 // Handles potential issues with legacy browsers
+};
+
+// Apply CORS middleware with the defined options
+app.use(cors(corsOptions));
 
 // Create an IPFS instance.
 const blockstore = new LevelBlockstore('./ipfs')
@@ -199,49 +214,36 @@ app.get('/api/query/id', async (req, res) => {
 
 app.post('/api/add-entry', async (req, res) => {
     try {
-        // Extract data from the request body
-        const { _id, asset, trade, quantity, price, date, rating } = req.body;
-
-        // Check if there is a previous entry with the same _id
-        const prevRecord = await db.get(_id);
-
-        if (prevRecord) {
-            // Include the previous hash in the new record
-            const prevHash = prevRecord.hash;
-
-            let updatedQuantity = quantity;
-            let updatedPrice = price;
-
-            if (trade === 'BUY' && asset === prevRecord.value.asset) {
-                // Update quantity based on trade type and asset
-                updatedQuantity += prevRecord.value.quantity;
-
-                // Calculate average price based on previous records and new trade price
-                const totalPrice = prevRecord.value.price * prevRecord.value.quantity;
-                const totalQuantity = prevRecord.value.quantity + quantity;
-                updatedPrice = (totalPrice + (price * quantity)) / totalQuantity;
-            } else if (trade === 'SELL' && asset === prevRecord.value.asset) {
-                // Update quantity based on trade type and asset
-                updatedQuantity = prevRecord.value.quantity - quantity;
-            }
-
-            // Add the new entry to the database
-            const newEntry = { _id, asset, trade, quantity: updatedQuantity, price: updatedPrice, date, rating, prevHash };
-            await db.put(newEntry);
-
-            res.status(201).json(newEntry); // Return the added entry
-        } else {
-            // If there is no previous entry, add the new entry without a previous hash
-            const newEntry = { _id, asset, trade, quantity, price, date, rating };
-            await db.put(newEntry);
-
-            res.status(201).json(newEntry); // Return the added entry
+      const {_id, asset, trade, quantity, price, date, rating} = req.body;
+  
+      // Check if there is a previous entry with the same _id
+      const prevRecord = await db.get(_id);
+  
+      let updatedQuantity = quantity;
+      let updatedPrice = price;
+      let prevHash = prevRecord ? prevRecord.hash : null;
+  
+      // Conditions based on trade type to update or create new record
+      if (prevRecord) {
+        if (trade === 'BUY' && asset === prevRecord.value.asset) {
+          updatedQuantity += prevRecord.value.quantity;
+          const totalPrice = prevRecord.value.price * prevRecord.value.quantity;
+          const totalQuantity = prevRecord.value.quantity + quantity;
+          updatedPrice = (totalPrice + (price * quantity)) / totalQuantity;
+        } else if (trade === 'SELL' && asset === prevRecord.value.asset) {
+          updatedQuantity -= prevRecord.value.quantity;
         }
+        await db.put({_id, asset, trade, quantity: updatedQuantity, price: updatedPrice, date, rating, prevHash});
+      } else {
+        await db.put({_id, asset, trade, quantity, price, date, rating});
+      }
+      res.status(201).json({ message: 'Entry added successfully', _id });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Internal server error' });
+      console.error(error);
+      res.status(500).json({ message: 'Internal server error', error });
     }
-});
+  });
+  
 
 // Your existing code for setting up IPFS, OrbitDB, and adding records...
 

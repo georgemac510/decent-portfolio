@@ -1,0 +1,33 @@
+.container {
+  min-height: 100vh; /* Use viewport height to ensure full screen height */
+  background-color: #4CAF50; /* Medium green background */
+  color: white; /* White text */
+  padding: 20px;
+  font-family: Arial, sans-serif;
+  display: flex;
+  flex-direction: column; /* Organizes content vertically */
+}
+
+.textInput {
+  color: black; /* Ensures text is visible */
+  background-color: #fff; /* Light background for contrast */
+  border: 1px solid #ccc; /* Light border for better visibility */
+  padding: 8px; /* Some padding for aesthetics */
+  margin-top: 5px; /* Spacing from label */
+}
+
+.textInput:focus {
+  border-color: #4CAF50; /* Green border on focus */
+}
+
+.submitButton {
+  background-color: yellow; /* Make the button stand out */
+  color: black;
+  padding: 10px 15px;
+  border: none;
+  cursor: pointer;
+}
+
+.submitButton:hover {
+  opacity: 0.9;
+}
