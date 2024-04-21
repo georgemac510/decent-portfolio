@@ -1,4 +1,5 @@
 /* App.module.css */
+
 .container {
   min-height: 100vh; /* Ensures the container uses at least the full height of the viewport */
   background-color: #4CAF50; /* Medium green background */
@@ -9,42 +10,49 @@
   flex-direction: column; /* Organizes content vertically */
 }
 
+.topRow {
+  display: flex;
+  justify-content: space-between; /* Positions items on the far left and far right */
+  align-items: flex-start; /* Aligns items to the top */
+}
 
 .header {
-  margin-top: -96px; 
-  display: flex; /* Aligns children (h1 and iframe) in a row */
-  align-items: center; /* Centers items vertically */
-  justify-content: space-between; /* Puts maximum space between items */
-  margin-bottom: 20px; /* Adds some space below the header */
+  flex-grow: 1; /* Allows the title to take necessary space */
 }
 
-/* If "Add Entry" is inside a div immediately following the header */
-.entrySection { /* Ensure this class is added to the div that contains the "Add Entry" form */
-  margin-top: -156px; /* Moves it up by approximately 1 inch */
+.iframeContainer {
+  width: 25%; /* Width of the iframe */
+  height: 252px; /* Height of the iframe */
 }
 
+.flexContainer {
+  display: flex;
+  justify-content: space-between; /* Spreads content horizontally across the available space */
+}
 
-/* App.module.css */
-.header iframe {
-  margin-top: 200px; /* Existing 24px (about 1/4 inch) + 96px (about 1 inch) */
-  transform: scale(0.67); /* Keeps the scaling if still needed */
-  transform-origin: top left;
+.entrySection, .querySection {
+  flex: 1; /* Allows these sections to grow and fill available space */
+}
+
+.dataSection {
+  flex: 1; /* Ensures data sections take equal space */
+  padding-left: 20px; /* Provides separation from form sections */
 }
 
 .textInput {
-  color: black; /* Ensures text is visible */
-  background-color: #fff; /* Light background for contrast */
-  border: 1px solid #ccc; /* Light border for better visibility */
-  padding: 8px; /* Some padding for aesthetics */
-  margin-top: 5px; /* Spacing from label */
+  color: black;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  padding: 8px;
+  margin-top: 5px; /* Adds spacing between form inputs */
 }
 
 .textInput:focus {
-  border-color: #4CAF50; /* Green border on focus */
+  border-color: #4CAF50; /* Highlight focus with the theme color */
 }
 
 .submitButton {
-  background-color: yellow; /* Make the button stand out */
+  background-color: yellow;
   color: black;
   padding: 10px 15px;
   border: none;
@@ -52,6 +60,8 @@
 }
 
 .submitButton:hover {
-  opacity: 0.9;
+  opacity: 0.9; /* Slight visual feedback on hover */
 }
+
+
 
