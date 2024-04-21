@@ -85,19 +85,20 @@ export default function Home() {
 
   return (
     <div className={styles.container}>
-        <div className={styles.header}>
-            <h1>Decent Portfolio <span role="img" aria-label="thumbs up">👍</span></h1>
-            <iframe src="https://coin360.com/coin-widget?coin=bitcoin-btc&utm_source=embed_widget_coin" 
-                    width="25%" 
-                    height="252" 
-                    frameBorder="0"
-                    style={{ flexShrink: 0 }} // Ensures that the iframe doesn't shrink
-            />
-        </div>
+      <div className={styles.topRow}>
+        <h1 className={styles.header}>Decent Portfolio <span role="img" aria-label="thumbs up">👍</span></h1>
+        <iframe 
+          className={styles.iframeContainer}
+          src="https://coin360.com/coin-widget?coin=bitcoin-btc&utm_source=embed_widget_coin" 
+          frameBorder="0"
+          style={{ flexShrink: 0 }} // Ensures that the iframe doesn't shrink
+        />
+      </div>
+      <div className={styles.flexContainer}> {/* Handles layout for transaction form and data */}
         <div className={styles.entrySection}>
-        <h2>Add Transaction</h2>
-        <form onSubmit={handleSubmit}>
-        <label className={styles.label}>
+          <h2>Add Transaction</h2>
+          <form onSubmit={handleSubmit}>
+          <label className={styles.label}>
             ID:
             <input type="text" name="_id" value={formData._id} onChange={handleChange} className={styles.textInput} />
           </label>
@@ -134,21 +135,23 @@ export default function Home() {
           <br />
           <button type="submit" className={styles.submitButton}>Submit</button>
         </form>
-        {postDataAddEntry && (
-          <div>
-            <h3>Last Transaction Data</h3>
-            <p>ID: {postDataAddEntry._id}</p>
-            <p>Asset: {postDataAddEntry.asset}</p>
-            <p>Trade: {postDataAddEntry.trade}</p>
-            <p>Quantity: {postDataAddEntry.quantity}</p>
-            <p>Price: {postDataAddEntry.price}</p>
-            <p>Date: {postDataAddEntry.date}</p>
-            <p>Rating: {postDataAddEntry.rating}</p>
-          </div>
-        )}
-      </div>
+        </div>
+      {postDataAddEntry && (
+        <div className={styles.dataSection}>
+          <h3>Last Transaction Data</h3>
+          <p>ID: {postDataAddEntry._id}</p>
+          <p>Asset: {postDataAddEntry.asset}</p>
+          <p>Trade: {postDataAddEntry.trade}</p>
+          <p>Quantity: {postDataAddEntry.quantity}</p>
+          <p>Price: {postDataAddEntry.price}</p>
+          <p>Date: {postDataAddEntry.date}</p>
+          <p>Rating: {postDataAddEntry.rating}</p>
+        </div>
+      )}
+    </div>
 
-      <div>
+    <div className={styles.flexContainer}> {/* Handles layout for query form and data */}
+      <div className={styles.querySection}>
         <h2>Position Query</h2>
         <form onSubmit={handleQuery}>
         <label className={styles.label}>
@@ -163,21 +166,22 @@ export default function Home() {
           <br />
           <button type="submit" className={styles.submitButton}>Query</button>
         </form>
-        {postDataQuery && (
-          <div>
-            <h2>Current Position</h2>
-            <p>ID: {postDataQuery._id}</p>
-            <p>Asset: {postDataQuery.asset}</p>
-            <p>Trade: {postDataQuery.trade}</p>
-            <p>Quantity: {postDataQuery.quantity}</p>
-            <p>Average Price: {postDataQuery.price}</p>
-            <p>Date: {postDataQuery.date}</p>
-            <p>Rating: {postDataQuery.rating}</p>
-          </div>
-        )}
-      </div>
+        </div>
+      {postDataQuery && (
+        <div className={styles.dataSection}>
+          <h2>Current Position</h2>
+          <p>ID: {postDataQuery._id}</p>
+          <p>Asset: {postDataQuery.asset}</p>
+          <p>Trade: {postDataQuery.trade}</p>
+          <p>Quantity: {postDataQuery.quantity}</p>
+          <p>Average Price: {postDataQuery.price}</p>
+          <p>Date: {postDataQuery.date}</p>
+          <p>Rating: {postDataQuery.rating}</p>
+        </div>
+      )}
     </div>
-  );
+  </div>
+);
 }
 
 
