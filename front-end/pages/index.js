@@ -41,7 +41,7 @@ export default function Home() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('https://orbitdb-server.ngrok.dev/api/add-entry', {
+      const response = await fetch('https://bd3f-151-202-34-247.ngrok-free.app/api/add-entry', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
