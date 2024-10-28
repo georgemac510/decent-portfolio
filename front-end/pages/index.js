@@ -63,7 +63,7 @@ export default function Home() {
   const handleQuery = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch(`https://orbitdb-server.ngrok.dev/api/query/id?id=${queryData._id_query}`);
+      const response = await fetch(`https://bd3f-151-202-34-247.ngrok-free.app/api/query/id?id=${queryData._id_query}`);
       if (!response.ok) {
         throw new Error('Failed to query database');
       }

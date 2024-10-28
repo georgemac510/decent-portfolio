@@ -53,16 +53,16 @@
 // // await orbitdb.stop()
 // // await ipfs.stop()
 
-import { createLibp2p } from 'libp2p'
-import { createHelia } from 'helia'
-import { createOrbitDB, IPFSAccessController } from '@orbitdb/core'
-import { LevelBlockstore } from 'blockstore-level'
-import { Libp2pOptions } from './config/libp2p.js'
-import express from 'express'
-import cors from 'cors'; // Import cors module
-import bodyParser from 'body-parser'; 
+import express from 'express';
+import cors from 'cors';
+import bodyParser from 'body-parser';
+import { createLibp2p } from 'libp2p';
+import { createHelia } from 'helia';
+import { createOrbitDB, IPFSAccessController } from '@orbitdb/core';
+import { LevelBlockstore } from 'blockstore-level';
+import { Libp2pOptions } from './config/libp2p.js';
 
-const app = express()
+const app = express();
 
 // Use bodyParser middleware for JSON parsing
 app.use(bodyParser.json());

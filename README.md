@@ -29,10 +29,14 @@ Peer #1:
 Peer #2:
 **Peer #2 must be started with the address of Peer #1
 
-    node index.js /orbitdb/zdpuAvMs33GVUxYFQwjGufiszEhDUZ7c1XZc7dPMavgZHoWo2
+    node index.js /orbitdb/zdpuAys9Qjmz3CLzmtafrCkUAP8pTu1c8je1hgofue1zmd
 
 ### Running app as a local Docker container
 
+
+### Ngrok endpoint
+
+    ngrok http --domain=orbitdb-server.ngrok.dev http://172.18.0.2:3000
 
 
 

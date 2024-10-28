@@ -194,11 +194,11 @@ const main = async () => {
 
   process.on('SIGINT', async () => {
       console.log((await db.all()).map(e => e.value))
-      await db.close()
-      await orbitdb.stop()
-      await ipfs.stop()
+      // await db.close()
+      // await orbitdb.stop()
+      // await ipfs.stop()
 
-      process.exit()
+      // process.exit()
   })
 }
 

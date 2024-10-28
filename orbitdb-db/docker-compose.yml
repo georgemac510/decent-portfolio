@@ -1,9 +1,14 @@
-version: '3.8'
+version: '3'
 
 services:
   orbitdb:
-    build: .
+    build: 
+      context: .
+    container_name: orbitdb-container
     ports:
-      - "3000:3000"
+      - "3000:3000" # Adjust port mapping as needed
     volumes:
-      - .:/app
+      - .:/app # Mount your code directory into the container
+    environment:
+      - NODE_ENV=production
+
