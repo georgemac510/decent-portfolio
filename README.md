@@ -38,6 +38,8 @@ Peer #2:
 
     ngrok http --domain=orbitdb-server.ngrok.dev http://172.18.0.2:3000
 
+    ngrok http --domain=orbitdb-server.ngrok.dev http://localhost:3000
+
 
 
 
