@@ -1,1 +1,21 @@
-.vercel
+# Node
+node_modules/
+*.log
+
+# Editor / OS
+.DS_Store
+.vscode/
+.idea/
+
+# v1 backend data (old paths that used to leak into git)
+orbitdb-db/orbitdb/
+client-alternate/orbitdb/
+back-end/orbitdb/
+
+# v2 backend runtime data
+v2-backend/data/
+v2-backend/node_modules/
+
+# Env
+.env
+.env.local

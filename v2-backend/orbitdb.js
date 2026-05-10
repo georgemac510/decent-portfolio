@@ -6,7 +6,7 @@ import { createLibp2p } from 'libp2p';
 import { createHelia } from 'helia';
 import { LevelBlockstore } from 'blockstore-level';
 import { LevelDatastore } from 'datastore-level';
-import { createOrbitDB, Documents } from '@orbitdb/core';
+import { createOrbitDB, Documents, IPFSAccessController } from '@orbitdb/core';
 import { libp2pOptions } from './libp2p-config.js';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { dirname } from 'node:path';
@@ -46,12 +46,21 @@ export async function initOrbitDB() {
 
   // Open by stored address if we have one (preserves data across restarts);
   // otherwise create by name and persist the address for next time.
+  //
+  // We attach IPFSAccessController({ write: ['*'] }) so any identity can
+  // write to the log. This is correct for a single-node app: our libp2p
+  // peer ID is regenerated on each restart (we don't persist a keypair),
+  // which means the *default* access controller — "only the creating
+  // identity can write" — would reject every write after the first run.
+  // For the eventual browser-side Helia phase, we'd switch to a proper
+  // OrbitDBAccessController with grant/revoke.
   const storedAddress = await loadStoredAddress();
   const target = storedAddress || DB_NAME;
   console.log(`[orbitdb] opening database: ${target}`);
 
   const db = await orbitdb.open(target, {
     Database: Documents({ indexBy: '_id' }),
+    AccessController: IPFSAccessController({ write: ['*'] }),
   });
 
   if (!storedAddress) {

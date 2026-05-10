@@ -1,61 +1,97 @@
-// Price feed: thin wrapper around CoinGecko's free /simple/price endpoint.
-// Caches results in memory for CACHE_TTL_MS so we don't hammer the free tier
-// (limit ~10-30 req/min depending on time of day).
+// OrbitDB + Helia bootstrap.
+// Returns an open document store keyed by `_id` so the existing data shape
+// (asset, trade, quantity, price, date, rating) ports over directly.
 
-import fetch from 'node-fetch';
+import { createLibp2p } from 'libp2p';
+import { createHelia } from 'helia';
+import { LevelBlockstore } from 'blockstore-level';
+import { LevelDatastore } from 'datastore-level';
+import { createOrbitDB, Documents, IPFSAccessController } from '@orbitdb/core';
+import { libp2pOptions } from './libp2p-config.js';
+import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { dirname } from 'node:path';
 
-const CACHE_TTL_MS = 10_000;
+const DB_NAME = 'decent-portfolio-v2';
+const IPFS_BLOCKS_DIR = './data/ipfs/blocks';
+const IPFS_DATASTORE_DIR = './data/ipfs/datastore';
+const ORBITDB_DIR = './data/orbitdb';
+const ADDRESS_FILE = './data/db-address.txt';
 
-// CoinGecko IDs for the four supported assets.
-const COIN_IDS = {
-  BTC: 'bitcoin',
-  ZEC: 'zcash',
-  SOL: 'solana',
-  ETH: 'ethereum',
-};
-
-const ENDPOINT =
-  'https://api.coingecko.com/api/v3/simple/price' +
-  `?ids=${Object.values(COIN_IDS).join(',')}` +
-  '&vs_currencies=usd' +
-  '&include_24hr_change=true';
-
-let cache = { data: null, fetchedAt: 0 };
-
-export async function getPrices() {
-  const now = Date.now();
-  if (cache.data && now - cache.fetchedAt < CACHE_TTL_MS) {
-    return cache.data;
-  }
-
+async function loadStoredAddress() {
   try {
-    const res = await fetch(ENDPOINT, {
-      headers: { accept: 'application/json' },
-    });
-    if (!res.ok) {
-      throw new Error(`coingecko ${res.status}: ${await res.text()}`);
-    }
-    const raw = await res.json();
-
-    // Normalize to our ticker shape: { BTC: { usd, change24h }, ... }
-    const normalized = Object.fromEntries(
-      Object.entries(COIN_IDS).map(([ticker, geckoId]) => [
-        ticker,
-        {
-          usd: raw[geckoId]?.usd ?? null,
-          change24h: raw[geckoId]?.usd_24h_change ?? null,
-        },
-      ])
-    );
-
-    cache = { data: normalized, fetchedAt: now };
-    return normalized;
+    const addr = (await readFile(ADDRESS_FILE, 'utf8')).trim();
+    return addr || null;
   } catch (err) {
-    console.error('[prices] fetch failed:', err.message);
-    // If we have stale cache, return it rather than failing the request.
-    if (cache.data) return cache.data;
+    if (err.code === 'ENOENT') return null;
     throw err;
   }
 }
 
-export const SUPPORTED_ASSETS = Object.keys(COIN_IDS);
+async function saveAddress(addr) {
+  await mkdir(dirname(ADDRESS_FILE), { recursive: true });
+  await writeFile(ADDRESS_FILE, addr, 'utf8');
+}
+
+export async function initOrbitDB() {
+  console.log('[orbitdb] starting libp2p…');
+  const libp2p = await createLibp2p(libp2pOptions);
+
+  console.log('[orbitdb] starting helia…');
+  const blockstore = new LevelBlockstore(IPFS_BLOCKS_DIR);
+  const datastore = new LevelDatastore(IPFS_DATASTORE_DIR);
+  const ipfs = await createHelia({ libp2p, blockstore, datastore });
+
+  console.log('[orbitdb] starting orbitdb…');
+  const orbitdb = await createOrbitDB({ ipfs, directory: ORBITDB_DIR });
+
+  // Open by stored address if we have one (preserves data across restarts);
+  // otherwise create by name and persist the address for next time.
+  //
+  // We attach IPFSAccessController({ write: ['*'] }) so any identity can
+  // write to the log. This is correct for a single-node app: our libp2p
+  // peer ID is regenerated on each restart (we don't persist a keypair),
+  // which means the *default* access controller — "only the creating
+  // identity can write" — would reject every write after the first run.
+  // For the eventual browser-side Helia phase, we'd switch to a proper
+  // OrbitDBAccessController with grant/revoke.
+  const storedAddress = await loadStoredAddress();
+  const target = storedAddress || DB_NAME;
+  console.log(`[orbitdb] opening database: ${target}`);
+
+  const db = await orbitdb.open(target, {
+    Database: Documents({ indexBy: '_id' }),
+    AccessController: IPFSAccessController({ write: ['*'] }),
+  });
+
+  if (!storedAddress) {
+    await saveAddress(db.address.toString());
+    console.log(`[orbitdb] persisted new address to ${ADDRESS_FILE}`);
+  }
+
+  console.log(`[orbitdb] ready. address: ${db.address}`);
+  console.log(`[orbitdb] peer id: ${libp2p.peerId.toString()}`);
+
+  // Log replication updates — useful for debugging when you eventually
+  // connect a browser-side Helia peer.
+  db.events.on('update', (entry) => {
+    console.log('[orbitdb] update:', entry?.payload?.op, entry?.payload?.key);
+  });
+
+  // Graceful shutdown so block/datastore writes flush cleanly.
+  const shutdown = async () => {
+    console.log('[orbitdb] shutting down…');
+    try {
+      await db.close();
+      await orbitdb.stop();
+      await ipfs.stop();
+      await libp2p.stop();
+    } catch (err) {
+      console.error('[orbitdb] shutdown error:', err);
+    }
+    process.exit(0);
+  };
+  process.on('SIGINT', shutdown);
+  process.on('SIGTERM', shutdown);
+
+  return { db, orbitdb, ipfs, libp2p };
+}

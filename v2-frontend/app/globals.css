@@ -1,0 +1,14 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body {
+    min-height: 100vh;
+    /* Subtle gradient from the v1 green to a darker tone — keeps the
+       identity but reads as more "dashboard" than "school project." */
+    background: linear-gradient(180deg, #4caf50 0%, #2e7d32 100%);
+    background-attachment: fixed;
+    color: white;
+  }
+}
