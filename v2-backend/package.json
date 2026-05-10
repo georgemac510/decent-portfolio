@@ -1,0 +1,30 @@
+{
+  "name": "decent-portfolio-v2-backend",
+  "version": "2.0.0",
+  "description": "OrbitDB-backed crypto portfolio tracker (modern Helia stack)",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "@chainsafe/libp2p-gossipsub": "^14.1.0",
+    "@chainsafe/libp2p-noise": "^16.0.0",
+    "@chainsafe/libp2p-yamux": "^7.0.1",
+    "@libp2p/identify": "^3.0.12",
+    "@libp2p/tcp": "^10.0.13",
+    "@orbitdb/core": "^2.5.0",
+    "blockstore-level": "^2.0.1",
+    "cors": "^2.8.5",
+    "datastore-level": "^11.0.1",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "helia": "^5.1.0",
+    "libp2p": "^2.4.1",
+    "node-fetch": "^3.3.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
