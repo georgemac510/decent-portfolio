@@ -15,15 +15,69 @@ import express from 'express';
 import cors from 'cors';
 import { initOrbitDB } from './orbitdb.js';
 import { getPrices, SUPPORTED_ASSETS } from './prices.js';
+import { rateLimit } from './rate-limit.js';
 
 const PORT = Number(process.env.PORT) || 3001;
+
+// Origins allowed to call this API. Production is the Vercel deploy plus the
+// custom domain (when there is one). Localhost is always allowed for local
+// frontend development. ALLOWED_ORIGINS env var can extend this list.
+const DEFAULT_ALLOWED_ORIGINS = [
+  'https://decent-portfolio.vercel.app',
+  'http://localhost:3000',
+  'http://localhost:3002',
+];
+const ALLOWED_ORIGINS = new Set([
+  ...DEFAULT_ALLOWED_ORIGINS,
+  ...(process.env.ALLOWED_ORIGINS || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean),
+]);
 
 async function main() {
   const { db } = await initOrbitDB();
 
   const app = express();
-  app.use(cors());
-  app.use(express.json());
+
+  // Trust the proxy chain (Cloudflare Tunnel) so req.ip resolves correctly.
+  // rate-limit.js prefers cf-connecting-ip but this is belt-and-suspenders.
+  app.set('trust proxy', true);
+
+  // CORS allowlist (instead of the previous `*`). Requests from unknown
+  // origins get no CORS headers, which means browsers reject the response.
+  // Server-to-server / curl callers don't send Origin and are not blocked
+  // here — that's what rate limiting is for.
+  app.use(
+    cors({
+      origin: (origin, cb) => {
+        if (!origin) return cb(null, true); // non-browser requests
+        if (ALLOWED_ORIGINS.has(origin)) return cb(null, true);
+        cb(new Error(`CORS blocked: ${origin}`));
+      },
+      methods: ['GET', 'POST', 'OPTIONS'],
+    })
+  );
+
+  app.use(express.json({ limit: '32kb' }));
+
+  // Rate limit everything by default; tighter limits on hot endpoints.
+  const defaultLimit = rateLimit({
+    category: 'default',
+    windowMs: 60_000,
+    max: 60,
+  });
+  const pricesLimit = rateLimit({
+    category: 'prices',
+    windowMs: 60_000,
+    max: 10,
+  });
+  const writeLimit = rateLimit({
+    category: 'writes',
+    windowMs: 60_000,
+    max: 5,
+  });
+  app.use(defaultLimit);
 
   // -- Health -----------------------------------------------------------
   app.get('/api/health', async (req, res) => {
@@ -36,7 +90,7 @@ async function main() {
   });
 
   // -- Prices -----------------------------------------------------------
-  app.get('/api/prices', async (req, res) => {
+  app.get('/api/prices', pricesLimit, async (req, res) => {
     try {
       const prices = await getPrices();
       res.json(prices);
@@ -46,7 +100,15 @@ async function main() {
   });
 
   // -- Add transaction --------------------------------------------------
-  app.post('/api/add-entry', async (req, res) => {
+  app.post('/api/add-entry', writeLimit, async (req, res) => {
+    // Soft Origin check: refuses writes from anywhere other than known
+    // browser origins. Trivially bypassable with curl --header, but stops
+    // casual abuse from other websites and most automated scrapers.
+    const origin = req.headers.origin;
+    if (origin && !ALLOWED_ORIGINS.has(origin)) {
+      return res.status(403).json({ error: 'origin not allowed' });
+    }
+
     const entry = req.body;
 
     // Basic validation. The frontend should also validate, but never trust it.
@@ -100,11 +162,18 @@ async function main() {
     }
   });
 
-  // -- All entries (for table views) -----------------------------------
+  // -- All entries (admin/debug only) ----------------------------------
+  // This endpoint dumps every transaction across every user; gating it
+  // by origin keeps it accessible from a local frontend dev session but
+  // blocks public Vercel + curl access. (Real auth is the proper fix and
+  // is in the README's future-work list.)
   app.get('/api/entries', async (req, res) => {
+    const origin = req.headers.origin;
+    if (origin !== 'http://localhost:3000' && origin !== 'http://localhost:3002') {
+      return res.status(403).json({ error: 'restricted endpoint' });
+    }
     try {
       const all = await db.all();
-      // db.all() returns [{ value, hash, key }, ...]; we just want the docs.
       res.json(all.map((row) => row.value));
     } catch (err) {
       console.error('[entries] error:', err);
