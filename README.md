@@ -1,6 +1,6 @@
 # Decent Portfolio
 
-A peer-to-peer crypto portfolio tracker. The frontend is a normal Next.js app on Vercel, but the database is a [Helia](https://github.com/ipfs/helia) (modern JavaScript IPFS) node running [OrbitDB](https://github.com/orbitdb/orbitdb) on my home server, reachable from the public internet via a Cloudflare Tunnel.
+A peer-to-peer crypto portfolio tracker. The frontend is a normal Next.js app on Vercel, but the database is a [Helia](https://github.com/ipfs/helia) (modern JavaScript IPFS) node running [OrbitDB](https://github.com/orbitdb/orbitdb) on a local server, reachable from the public internet via a Cloudflare Tunnel.
 
 **Live demo:** [decent-portfolio.vercel.app](https://decent-portfolio.vercel.app)
 
