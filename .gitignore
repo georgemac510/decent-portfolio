@@ -19,3 +19,4 @@ v2-backend/node_modules/
 # Env
 .env
 .env.local
+.vercel
