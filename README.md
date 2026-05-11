@@ -4,7 +4,7 @@ A peer-to-peer crypto portfolio tracker. The frontend is a normal Next.js app on
 
 **Live demo:** [decent-portfolio.vercel.app](https://decent-portfolio.vercel.app)
 
-![Decent Portfolio screenshot](assets/decent-port-new-5-10.png)
+![Decent Portfolio screenshot](assets/decent-port-BTC.png)
 
 ## Why this exists
 
