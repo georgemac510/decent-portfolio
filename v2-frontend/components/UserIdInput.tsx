@@ -37,7 +37,7 @@ export function UserIdInput({ value, onChange }: Props) {
       <input
         type="text"
         className="rounded-md border border-white/20 bg-white/95 px-3 py-1.5 font-mono text-sm text-black focus:border-portfolio-yellow focus:outline-none focus:ring-2 focus:ring-portfolio-yellow/50"
-        placeholder="john"
+        placeholder="add your name"
         value={local}
         onChange={(e) => setLocal(e.target.value)}
         onBlur={commit}
