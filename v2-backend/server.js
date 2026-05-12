@@ -1,3 +1,7 @@
+// Decent Portfolio v2 backend
+// https://github.com/georgemac510/decent-portfolio
+// Built by John McLaughlin
+
 // Decent Portfolio v2 — Express API on top of OrbitDB.
 //
 // Routes:

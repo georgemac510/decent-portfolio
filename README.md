@@ -52,6 +52,8 @@ flowchart TB
 
 The frontend is just HTML + JS served from Vercel's CDN; it has no special knowledge of IPFS. It talks to the backend over plain HTTPS through the Cloudflare Tunnel, which means HTTPS termination, DDoS protection, and a stable public hostname without exposing any ports on the home machine.
 
+The backend runs on one box in a small homelab in my basement, alongside a few other machines doing unrelated things (a self-hosted Solana validator, among others).
+
 ## Stack
 
 **Backend** (`v2-backend/`)
@@ -69,8 +71,8 @@ The frontend is just HTML + JS served from Vercel's CDN; it has no special knowl
 
 **Infrastructure**
 - Vercel — frontend hosting and CI
-- Cloudflare Tunnel — free HTTPS ingress to the server
-- A self-hosted Ubuntu box running both the backend and a Solana validator
+- Cloudflare Tunnel — free HTTPS ingress to the homelab
+- A small homelab in my basement, hosting the backend alongside other unrelated infrastructure
 
 ## Features
 
