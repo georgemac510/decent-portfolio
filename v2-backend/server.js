@@ -20,6 +20,8 @@ import cors from 'cors';
 import { initOrbitDB } from './orbitdb.js';
 import { getPrices, SUPPORTED_ASSETS } from './prices.js';
 import { rateLimit } from './rate-limit.js';
+import { multiaddr } from '@multiformats/multiaddr';
+import { Voyager } from '@orbitdb/voyager';
 
 const PORT = Number(process.env.PORT) || 3001;
 
@@ -40,7 +42,28 @@ const ALLOWED_ORIGINS = new Set([
 ]);
 
 async function main() {
-  const { db } = await initOrbitDB();
+  const { db, orbitdb } = await initOrbitDB();
+
+  // Register the database with our local Voyager daemon for replication.
+  // Voyager is an availability optimization, not a correctness requirement:
+  // if it's unreachable, Decent Portfolio still serves reads and writes
+  // from its own OrbitDB instance.
+  const voyagerAddress = process.env.VOYAGER_ADDRESS;
+  if (voyagerAddress) {
+    try {
+      const voyager = await Voyager({
+        orbitdb,
+        address: multiaddr(voyagerAddress),
+      });
+      await voyager.add(db.address);
+      console.log(`[voyager] registered ${db.address} for replication`);
+    } catch (err) {
+      console.error('[voyager] registration failed:', err);
+      // Intentionally don't rethrow — keep the server running.
+    }
+  } else {
+    console.log('[voyager] VOYAGER_ADDRESS not set; skipping replication setup');
+  }
 
   const app = express();
 

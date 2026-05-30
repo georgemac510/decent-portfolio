@@ -31,8 +31,10 @@ flowchart TB
         express["Express API<br/>rate limiter · CORS · /api/*"]
         orbitdb["OrbitDB<br/>document store"]
         helia["Helia (IPFS) + libp2p"]
+        voyager["Voyager<br/>pinning daemon"]
         express --> orbitdb
         orbitdb --> helia
+        orbitdb <==>|"replicates via libp2p"| voyager
     end
 
     coingecko[("CoinGecko<br/>price feed")]
@@ -45,12 +47,16 @@ flowchart TB
     classDef cloud fill:#e3f2fd,stroke:#1976d2,color:#0d47a1
     classDef home fill:#e8f5e9,stroke:#388e3c,color:#1b5e20
     classDef external fill:#fff3e0,stroke:#f57c00,color:#e65100
+    classDef voyager fill:#fff8e1,stroke:#f9a825,color:#b48400
     class vercel,cloudflare cloud
     class homeserver home
     class coingecko external
+    class voyager voyager
 ```
 
 The frontend is just HTML + JS served from Vercel's CDN; it has no special knowledge of IPFS. It talks to the backend over plain HTTPS through the Cloudflare Tunnel, which means HTTPS termination, DDoS protection, and a stable public hostname without exposing any ports on the home machine.
+
+**The backend's OrbitDB database is replicated to a local Voyager pinning peer**, so the database lives in at least two places. If the Express server's IPFS node loses its datastore, Voyager has a full copy and can serve it back. The next planned move is browser-side replication, at which point any user reading the data also becomes a replica.
 
 The backend runs on one box in a small homelab in my basement, alongside a few other machines doing unrelated things (a self-hosted Solana validator, among others).
 
@@ -126,7 +132,7 @@ A few things I learned (or relearned the hard way) building this:
 ## Roadmap
 
 - **Wallet-based auth** — sign-in with Ethereum or Solana, replacing the free-text User ID. On-brand for the decentralized identity story.
-- **Browser-side Helia peer** — the frontend joins the IPFS swarm directly and reads OrbitDB without going through Express. Removes the home server as a single point of failure (the funniest thing about the current architecture is that an app branded "peer-to-peer" has exactly one point of failure).
+- **Browser-side Helia peer** — the frontend joins the IPFS swarm directly and reads OrbitDB without going through Express. Today the backend and Voyager both live in the same basement; this would put a third replica in every user's browser, which is the architecture the project has been building toward.
 - **Portfolio value over time** — historical chart of total portfolio value, using stored snapshots.
 - **Transaction edit and delete** — currently transactions are append-only, which is correct for a CRDT but not how users think.
 - **WebSocket price feed** — sub-second updates direct from a Binance ticker stream instead of polling CoinGecko.
