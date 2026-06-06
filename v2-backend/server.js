@@ -3,16 +3,7 @@
 // Built by John McLaughlin
 
 // Decent Portfolio v2 — Express API on top of OrbitDB.
-//
-// Routes:
-//   GET  /api/health           — liveness check
-//   GET  /api/prices           — current USD prices for BTC/ZEC/SOL/ETH
-//   POST /api/add-entry        — add a transaction (BUY/SELL)
-//   GET  /api/entries          — all transactions
-//   GET  /api/query/id?id=…    — transactions for a specific user id
-//   GET  /api/positions?id=…   — computed positions w/ live PnL for a user
-//
-// Listens on PORT (default 3001) so v1 on 3000 keeps running unchanged.
+
 
 import 'dotenv/config';
 import express from 'express';
@@ -22,6 +13,7 @@ import { getPrices, SUPPORTED_ASSETS } from './prices.js';
 import { rateLimit } from './rate-limit.js';
 import { multiaddr } from '@multiformats/multiaddr';
 import { Voyager } from '@orbitdb/voyager';
+import { computePositions } from './lib/computePositions.js';
 
 const PORT = Number(process.env.PORT) || 3001;
 
@@ -45,9 +37,7 @@ async function main() {
   const { db, orbitdb } = await initOrbitDB();
 
   // Register the database with our local Voyager daemon for replication.
-  // Voyager is an availability optimization, not a correctness requirement:
-  // if it's unreachable, Decent Portfolio still serves reads and writes
-  // from its own OrbitDB instance.
+
   const voyagerAddress = process.env.VOYAGER_ADDRESS;
   if (voyagerAddress) {
     try {
@@ -59,7 +49,6 @@ async function main() {
       console.log(`[voyager] registered ${db.address} for replication`);
     } catch (err) {
       console.error('[voyager] registration failed:', err);
-      // Intentionally don't rethrow — keep the server running.
     }
   } else {
     console.log('[voyager] VOYAGER_ADDRESS not set; skipping replication setup');
@@ -67,18 +56,12 @@ async function main() {
 
   const app = express();
 
-  // Trust the proxy chain (Cloudflare Tunnel) so req.ip resolves correctly.
-  // rate-limit.js prefers cf-connecting-ip but this is belt-and-suspenders.
   app.set('trust proxy', true);
 
-  // CORS allowlist (instead of the previous `*`). Requests from unknown
-  // origins get no CORS headers, which means browsers reject the response.
-  // Server-to-server / curl callers don't send Origin and are not blocked
-  // here — that's what rate limiting is for.
   app.use(
     cors({
       origin: (origin, cb) => {
-        if (!origin) return cb(null, true); // non-browser requests
+        if (!origin) return cb(null, true); 
         if (ALLOWED_ORIGINS.has(origin)) return cb(null, true);
         cb(new Error(`CORS blocked: ${origin}`));
       },
@@ -88,7 +71,7 @@ async function main() {
 
   app.use(express.json({ limit: '32kb' }));
 
-  // Rate limit everything by default; tighter limits on hot endpoints.
+  // Rate limit by default.
   const defaultLimit = rateLimit({
     category: 'default',
     windowMs: 60_000,
@@ -128,9 +111,7 @@ async function main() {
 
   // -- Add transaction --------------------------------------------------
   app.post('/api/add-entry', writeLimit, async (req, res) => {
-    // Soft Origin check: refuses writes from anywhere other than known
-    // browser origins. Trivially bypassable with curl --header, but stops
-    // casual abuse from other websites and most automated scrapers.
+ 
     const origin = req.headers.origin;
     if (origin && !ALLOWED_ORIGINS.has(origin)) {
       return res.status(403).json({ error: 'origin not allowed' });
@@ -138,7 +119,6 @@ async function main() {
 
     const entry = req.body;
 
-    // Basic validation. The frontend should also validate, but never trust it.
     const required = ['_id', 'asset', 'trade', 'quantity', 'price', 'date'];
     for (const field of required) {
       if (entry[field] === undefined || entry[field] === '') {
@@ -164,9 +144,7 @@ async function main() {
       return res.status(400).json({ error: 'price must be a positive number' });
     }
 
-    // Compose a per-transaction id so multiple BUY entries by the same user
-    // for the same asset don't collide. v1 used `_id` as the user id, which
-    // meant only one row per user could exist at a time.
+
     const txId = `${entry._id}:${asset}:${Date.now()}`;
     const doc = {
       _id: txId,
@@ -190,10 +168,6 @@ async function main() {
   });
 
   // -- All entries (admin/debug only) ----------------------------------
-  // This endpoint dumps every transaction across every user; gating it
-  // by origin keeps it accessible from a local frontend dev session but
-  // blocks public Vercel + curl access. (Real auth is the proper fix and
-  // is in the README's future-work list.)
   app.get('/api/entries', async (req, res) => {
     const origin = req.headers.origin;
     if (origin !== 'http://localhost:3000' && origin !== 'http://localhost:3002') {
@@ -208,12 +182,11 @@ async function main() {
     }
   });
 
-  // -- Query by user id (v1 compat shape) ------------------------------
+  // -- Query by user id ------------------------------------------------
   app.get('/api/query/id', async (req, res) => {
     const id = String(req.query.id || '');
     if (!id) return res.status(400).json({ error: 'id required' });
     try {
-      // db.query(mapper) returns docs where mapper(doc) is truthy.
       const matches = await db.query((doc) => doc.userId === id);
       res.json(matches);
     } catch (err) {
@@ -223,98 +196,19 @@ async function main() {
   });
 
   // -- Computed positions with live PnL --------------------------------
-  // For a given user, aggregate BUY/SELL transactions per asset and overlay
-  // the current spot price to produce: holdings, avg cost, market value,
-  // unrealized PnL ($ and %).
+
   app.get('/api/positions', async (req, res) => {
     const id = String(req.query.id || '');
     if (!id) return res.status(400).json({ error: 'id required' });
-
+  
     try {
       const [txs, prices] = await Promise.all([
         db.query((doc) => doc.userId === id),
         getPrices().catch(() => null),
       ]);
-
-      // OrbitDB's document query iterates the index, not the oplog, so order
-      // is not guaranteed. We must sort by createdAt before aggregating —
-      // otherwise SELLs can be applied before their corresponding BUYs and
-      // the running avg-cost calculation goes haywire.
-      txs.sort((a, b) => {
-        const ta = a.createdAt || a.date || '';
-        const tb = b.createdAt || b.date || '';
-        return ta < tb ? -1 : ta > tb ? 1 : 0;
-      });
-
-      // Aggregate per asset.
-      const positions = {};
-      for (const tx of txs) {
-        const a = tx.asset;
-        if (!positions[a]) {
-          positions[a] = { asset: a, quantity: 0, costBasis: 0 };
-        }
-        const sign = tx.trade === 'BUY' ? 1 : -1;
-        const qty = sign * tx.quantity;
-
-        if (sign > 0) {
-          // BUY: add to cost basis at trade price.
-          positions[a].costBasis += tx.quantity * tx.price;
-          positions[a].quantity += qty;
-        } else {
-          // SELL: reduce quantity proportionally at the *current* avg cost.
-          const avgCost =
-            positions[a].quantity > 0
-              ? positions[a].costBasis / positions[a].quantity
-              : 0;
-          positions[a].costBasis += qty * avgCost; // qty is negative
-          positions[a].quantity += qty;
-        }
-      }
-
-      // Layer on live prices and compute PnL.
-      const result = Object.values(positions)
-        .filter((p) => p.quantity > 0.000_000_01) // hide dust / closed positions
-        .map((p) => {
-          const avgCost = p.quantity > 0 ? p.costBasis / p.quantity : 0;
-          const spot = prices?.[p.asset]?.usd ?? null;
-          const change24h = prices?.[p.asset]?.change24h ?? null;
-          const marketValue = spot !== null ? p.quantity * spot : null;
-          const pnl = marketValue !== null ? marketValue - p.costBasis : null;
-          const pnlPct =
-            marketValue !== null && p.costBasis > 0
-              ? (pnl / p.costBasis) * 100
-              : null;
-          return {
-            asset: p.asset,
-            quantity: p.quantity,
-            avgCost,
-            costBasis: p.costBasis,
-            spot,
-            change24h,
-            marketValue,
-            pnl,
-            pnlPct,
-          };
-        });
-
-      const totalCost = result.reduce((s, p) => s + p.costBasis, 0);
-      const totalValue = result.reduce(
-        (s, p) => s + (p.marketValue ?? 0),
-        0
-      );
-      const totalPnl = totalValue - totalCost;
-
-      res.json({
-        userId: id,
-        positions: result,
-        totals: {
-          cost: totalCost,
-          value: totalValue,
-          pnl: totalPnl,
-          pnlPct: totalCost > 0 ? (totalPnl / totalCost) * 100 : 0,
-        },
-        pricesAt: new Date().toISOString(),
-      });
+  
+      const response = computePositions(id, txs, prices);
+      res.json(response);
     } catch (err) {
       console.error('[positions] error:', err);
       res.status(500).json({ error: 'failed to compute positions' });
