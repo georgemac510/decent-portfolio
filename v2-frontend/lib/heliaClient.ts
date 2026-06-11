@@ -1,11 +1,8 @@
-// Browser-side IPFS/OrbitDB lifecycle.
-//
-// Lazily initializes a single libp2p + Helia + OrbitDB instance on first call
-// and caches it for the rest of the session. The browser becomes a real peer
-// on the IPFS network, replicates the Decent Portfolio database from Voyager,
-// and reads positions/transactions locally.
-//
-// Configuration via NEXT_PUBLIC env vars in .env.local:
+
+// Initializes a single libp2p + Helia + OrbitDB instance on first call
+// and caches it for the rest of the session. 
+
+// NEXT_PUBLIC env vars in .env.local:
 //   NEXT_PUBLIC_USE_P2P=true               -- master switch for Phase B
 //   NEXT_PUBLIC_DB_ADDRESS=/orbitdb/...    -- the database to open
 //   NEXT_PUBLIC_VOYAGER_MULTIADDR=...      -- WebSocket dial address of Voyager
@@ -20,7 +17,7 @@ import { identify } from '@libp2p/identify';
 import { gossipsub } from '@chainsafe/libp2p-gossipsub';
 import { multiaddr } from '@multiformats/multiaddr';
 
-// Singleton state — initialized once per browser session.
+// Initialized once per browser session.
 let initPromise: Promise<{ libp2p: Libp2p; helia: Helia; orbitdb: any; db: any }> | null = null;
 
 async function initialize() {
@@ -66,7 +63,7 @@ async function initialize() {
 
 /**
  * Get the singleton Helia/OrbitDB instance. First call initializes; subsequent
- * calls return the cached instance. Safe to call from React components or hooks.
+ * calls return the cached instance.
  */
 export function getHeliaClient() {
   if (!initPromise) {
