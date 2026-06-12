@@ -29,7 +29,7 @@ async function initialize() {
   const [
     { createLibp2p },
     { createHelia },
-    { createOrbitDB, IPFSAccessController },
+    { createOrbitDB, IPFSAccessController, Documents },
     { webSockets },
     { noise },
     { yamux },
@@ -70,6 +70,7 @@ async function initialize() {
 
   console.log('[helia] opening database', dbAddress);
   const db = await orbitdb.open(dbAddress, {
+    Database: Documents({ indexBy: '_id' }),
     AccessController: IPFSAccessController({ write: ['*'] }),
   });
 
