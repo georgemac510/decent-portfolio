@@ -1,26 +1,20 @@
-
-// Initializes a single libp2p + Helia + OrbitDB instance on first call
-// and caches it for the rest of the session. 
-
-// NEXT_PUBLIC env vars in .env.local:
+// Browser-side IPFS/OrbitDB lifecycle.
+//
+// Configuration via NEXT_PUBLIC env vars in .env.local:
 //   NEXT_PUBLIC_USE_P2P=true               -- master switch for Phase B
 //   NEXT_PUBLIC_DB_ADDRESS=/orbitdb/...    -- the database to open
 //   NEXT_PUBLIC_VOYAGER_MULTIADDR=...      -- WebSocket dial address of Voyager
 
-import { createLibp2p, type Libp2p } from 'libp2p';
-import { createHelia, type Helia } from 'helia';
-import { createOrbitDB, IPFSAccessController } from '@orbitdb/core';
-import { webSockets } from '@libp2p/websockets';
-import { noise } from '@chainsafe/libp2p-noise';
-import { yamux } from '@chainsafe/libp2p-yamux';
-import { identify } from '@libp2p/identify';
-import { gossipsub } from '@chainsafe/libp2p-gossipsub';
-import { multiaddr } from '@multiformats/multiaddr';
+// Singleton state — initialized once per browser session.
 
-// Initialized once per browser session.
-let initPromise: Promise<{ libp2p: Libp2p; helia: Helia; orbitdb: any; db: any }> | null = null;
+let initPromise: Promise<{ libp2p: any; helia: any; orbitdb: any; db: any }> | null = null;
 
 async function initialize() {
+  // Guard: this function should never run server-side.
+  if (typeof window === 'undefined') {
+    throw new Error('heliaClient can only be initialized in the browser');
+  }
+
   const dbAddress = process.env.NEXT_PUBLIC_DB_ADDRESS;
   const voyagerMultiaddr = process.env.NEXT_PUBLIC_VOYAGER_MULTIADDR;
 
@@ -30,6 +24,29 @@ async function initialize() {
   if (!voyagerMultiaddr) {
     throw new Error('NEXT_PUBLIC_VOYAGER_MULTIADDR is required for Phase B');
   }
+
+  // Dynamic imports — only loaded when this function actually runs (browser only).
+  const [
+    { createLibp2p },
+    { createHelia },
+    { createOrbitDB, IPFSAccessController },
+    { webSockets },
+    { noise },
+    { yamux },
+    { identify },
+    { gossipsub },
+    { multiaddr },
+  ] = await Promise.all([
+    import('libp2p'),
+    import('helia'),
+    import('@orbitdb/core'),
+    import('@libp2p/websockets'),
+    import('@chainsafe/libp2p-noise'),
+    import('@chainsafe/libp2p-yamux'),
+    import('@libp2p/identify'),
+    import('@chainsafe/libp2p-gossipsub'),
+    import('@multiformats/multiaddr'),
+  ]);
 
   console.log('[helia] initializing libp2p…');
   const libp2p = await createLibp2p({
@@ -62,8 +79,7 @@ async function initialize() {
 }
 
 /**
- * Get the singleton Helia/OrbitDB instance. First call initializes; subsequent
- * calls return the cached instance.
+ * Get the singleton Helia/OrbitDB instance.
  */
 export function getHeliaClient() {
   if (!initPromise) {

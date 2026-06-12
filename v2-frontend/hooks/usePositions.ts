@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { api } from '@/lib/api';
+import { dataSource as api } from '@/lib/dataSource';
 import type { PositionsResponse } from '@/lib/types';
 
 const POLL_MS = 30_000;
