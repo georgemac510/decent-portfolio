@@ -1,36 +1,47 @@
-// Browser-side OrbitDB read path.
-// Methods that can be served from a local OrbitDB replica (positions, entries, queryById). 
+// Browser-side OrbitDB read path with HTTP fallback.
 
 import { getHeliaClient } from './heliaClient';
 import { computePositions } from './computePositions';
 import { api } from './api';
-import type {
-  PositionsResponse,
-  Transaction,
-} from './types';
+import type { PositionsResponse, Transaction } from './types';
+
+const HELIA_INIT_TIMEOUT_MS = 10_000;
+
+let heliaUnavailable = false; // sticky once we've decided WSS doesn't work
+
+async function getClientOrFail(): Promise<Awaited<ReturnType<typeof getHeliaClient>> | null> {
+  if (heliaUnavailable) return null;
+  try {
+    return await Promise.race([
+      getHeliaClient(),
+      new Promise<null>((_, reject) =>
+        setTimeout(() => reject(new Error('helia-init-timeout')), HELIA_INIT_TIMEOUT_MS)
+      ),
+    ]);
+  } catch (err) {
+    console.warn('[p2p] helia unavailable, falling back to HTTP:', (err as Error).message);
+    heliaUnavailable = true;
+    return null;
+  }
+}
 
 async function readAllTransactions(): Promise<Transaction[]> {
-  const { db } = await getHeliaClient();
-  // OrbitDB document store's .all() returns [{ hash, key, value }, ...].
-  // We only need the document values.
-  const rows = await db.all();
+  const client = await getClientOrFail();
+  if (!client) return api.entries();
+  const rows = await client.db.all();
   return rows.map((row: { value: Transaction }) => row.value);
 }
 
 async function queryByUserId(userId: string): Promise<Transaction[]> {
-  const { db } = await getHeliaClient();
-  // db.query takes a predicate; the docstore evaluates it against each doc.
-  const matches = await db.query((doc: Transaction) => doc.userId === userId);
-  return matches;
+  const client = await getClientOrFail();
+  if (!client) return api.queryById(userId);
+  return client.db.query((doc: Transaction) => doc.userId === userId);
 }
 
 export const p2p = {
-  /**
-   * Read positions for a user from the local OrbitDB replica.
-   * Prices still come from the HTTP API (server-side cached).
-   */
   positions: async (userId: string, signal?: AbortSignal): Promise<PositionsResponse> => {
-    // Fetch user's transactions from local DB and prices from HTTP in parallel.
+    const client = await getClientOrFail();
+    if (!client) return api.positions(userId, signal);
     const [txs, prices] = await Promise.all([
       queryByUserId(userId),
       api.prices(signal).catch(() => null),
@@ -38,16 +49,10 @@ export const p2p = {
     return computePositions(userId, txs, prices);
   },
 
-  /**
-   * Read all transactions from the local OrbitDB replica.
-   */
   entries: async (_signal?: AbortSignal): Promise<Transaction[]> => {
     return readAllTransactions();
   },
 
-  /**
-   * Filter transactions by user ID from the local OrbitDB replica.
-   */
   queryById: async (userId: string, _signal?: AbortSignal): Promise<Transaction[]> => {
     return queryByUserId(userId);
   },
