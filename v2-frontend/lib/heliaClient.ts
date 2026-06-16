@@ -17,6 +17,7 @@ async function initialize() {
 
   const dbAddress = process.env.NEXT_PUBLIC_DB_ADDRESS;
   const voyagerMultiaddr = process.env.NEXT_PUBLIC_VOYAGER_MULTIADDR;
+  const password = process.env.NEXT_PUBLIC_DB_ENCRYPTION_PASSWORD;
 
   if (!dbAddress) {
     throw new Error('NEXT_PUBLIC_DB_ADDRESS is required for Phase B');
@@ -24,12 +25,16 @@ async function initialize() {
   if (!voyagerMultiaddr) {
     throw new Error('NEXT_PUBLIC_VOYAGER_MULTIADDR is required for Phase B');
   }
+  if (!password) {
+    throw new Error('NEXT_PUBLIC_DB_ENCRYPTION_PASSWORD is required for encrypted database');
+  }
 
   // Dynamic imports — only loaded when this function actually runs (browser only).
   const [
     { createLibp2p },
     { createHelia },
     { createOrbitDB, IPFSAccessController, Documents },
+    { default: SimpleEncryption },
     { webSockets },
     { noise },
     { yamux },
@@ -40,6 +45,7 @@ async function initialize() {
     import('libp2p'),
     import('helia'),
     import('@orbitdb/core'),
+    import('@orbitdb/simple-encryption'),
     import('@libp2p/websockets'),
     import('@chainsafe/libp2p-noise'),
     import('@chainsafe/libp2p-yamux'),
@@ -68,10 +74,14 @@ async function initialize() {
   console.log('[helia] starting orbitdb…');
   const orbitdb = await createOrbitDB({ ipfs: helia });
 
+  console.log('[helia] initializing encryption…');
+  const data = await SimpleEncryption({ password });
+
   console.log('[helia] opening database', dbAddress);
   const db = await orbitdb.open(dbAddress, {
     Database: Documents({ indexBy: '_id' }),
     AccessController: IPFSAccessController({ write: ['*'] }),
+    encryption: { data },
   });
 
   console.log('[helia] ready. local peer id:', libp2p.peerId.toString());

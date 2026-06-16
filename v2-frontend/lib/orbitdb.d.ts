@@ -5,4 +5,9 @@ declare module '@orbitdb/core' {
     export function IPFSAccessController(options?: { write?: string[] }): any;
     export function OrbitDBAccessController(options?: { write?: string[] }): any;
     export function Documents(options?: { indexBy?: string }): any;
-  }
+}
+
+declare module '@orbitdb/simple-encryption' {
+  const SimpleEncryption: (options: { password: string }) => Promise<any>;
+  export default SimpleEncryption;
+}

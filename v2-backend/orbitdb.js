@@ -7,6 +7,7 @@ import { createHelia } from 'helia';
 import { LevelBlockstore } from 'blockstore-level';
 import { LevelDatastore } from 'datastore-level';
 import { createOrbitDB, Documents, IPFSAccessController } from '@orbitdb/core';
+import SimpleEncryption from '@orbitdb/simple-encryption';
 import { libp2pOptions } from './libp2p-config.js';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { dirname } from 'node:path';
@@ -33,6 +34,11 @@ async function saveAddress(addr) {
 }
 
 export async function initOrbitDB() {
+  const password = process.env.DB_ENCRYPTION_PASSWORD;
+  if (!password) {
+    throw new Error('DB_ENCRYPTION_PASSWORD env var is required for encrypted database');
+  }
+
   console.log('[orbitdb] starting libp2p…');
   const libp2p = await createLibp2p(libp2pOptions);
 
@@ -58,9 +64,13 @@ export async function initOrbitDB() {
   const target = storedAddress || DB_NAME;
   console.log(`[orbitdb] opening database: ${target}`);
 
+  console.log('[orbitdb] initializing encryption…');
+  const data = await SimpleEncryption({ password });
+
   const db = await orbitdb.open(target, {
     Database: Documents({ indexBy: '_id' }),
     AccessController: IPFSAccessController({ write: ['*'] }),
+    encryption: { data },
   });
 
   if (!storedAddress) {

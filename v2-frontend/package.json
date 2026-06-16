@@ -17,6 +17,7 @@
     "@libp2p/websockets": "^9.2.19",
     "@multiformats/multiaddr": "^12.5.1",
     "@orbitdb/core": "^2.5.0",
+    "@orbitdb/simple-encryption": "^0.0.2",
     "blockstore-level": "^2.0.5",
     "datastore-level": "^11.0.4",
     "helia": "^5.5.1",
