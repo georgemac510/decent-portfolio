@@ -39,12 +39,31 @@ Hot-patched both `~/decent-portfolio/v2-backend/node_modules/@orbitdb/core/src/d
 
 Upstream issue filed: https://github.com/orbitdb/orbitdb/issues/1253
 
+## Milestone 4 progress (2026-06-23)
+
+Frontend upgraded to `@orbitdb/core@3.0.2`. Same documents.js typo patched in 
+frontend's node_modules. Empirical verification: the patch makes the browser 
+correctly engage the encryption code path during sync — wrong/missing entries 
+now surface as "Could not decrypt payload" errors at `entry.js:186` / 
+`sync.js:161`, where before they would silently pass through.
+
+Side finding: Voyager's database state from June 16-17 (pre-patch) had entries 
+that were never actually encrypted, despite the backend trying to. The browser 
+correctly refused to decrypt these. Voyager wiped clean today (data moved to 
+~/voyager-data-bak/). Voyager keystore preserved so peer ID stays stable.
+
+Open: end-to-end "browser P2P with encryption against a live pinning peer" 
+remains unvalidated. The backend doesn't currently register the database with 
+any pinning peer (Voyager registration commented out during Milestone 2; 
+Milestone 3 will replace it with relay-pinner). The visible production page 
+still renders via HTTP fallback.
+
 ## Milestones
 
 1. ✅ Get relay-pinner running locally in isolation
 2. ✅ Upgrade backend Decent Portfolio to core 3.x (in-place upgrade complete; Voyager removed from deps and commented out in server.js; backend writes and reads work under core 3.0.2)
 3. ⬜ Rewrite backend Voyager integration to use relay-pinner's HTTP `/pinning/*` API
-4. ⬜ Upgrade frontend to core 3.x (and apply same Documents patch)
+4. 🟡 Upgrade frontend to core 3.x (and apply same Documents patch)
 5. 🟡 Encryption working locally via hot-patch; needs upstream merge or local `patch-package` setup to survive `npm install`. Wrong-password test passes empirically on the live backend.
 6. ⬜ Production deployment: replace voyager.service with relay-pinner under systemd
 

@@ -12,7 +12,7 @@ import { initOrbitDB } from './orbitdb.js';
 import { getPrices, SUPPORTED_ASSETS } from './prices.js';
 import { rateLimit } from './rate-limit.js';
 import { multiaddr } from '@multiformats/multiaddr';
-import { Voyager } from '@orbitdb/voyager';
+// import { Voyager } from '@orbitdb/voyager';
 import { computePositions } from './lib/computePositions.js';
 
 const PORT = Number(process.env.PORT) || 3001;
@@ -38,21 +38,21 @@ async function main() {
 
   // Register the database with our local Voyager daemon for replication.
 
-  const voyagerAddress = process.env.VOYAGER_ADDRESS;
-  if (voyagerAddress) {
-    try {
-      const voyager = await Voyager({
-        orbitdb,
-        address: multiaddr(voyagerAddress),
-      });
-      await voyager.add(db.address);
-      console.log(`[voyager] registered ${db.address} for replication`);
-    } catch (err) {
-      console.error('[voyager] registration failed:', err);
-    }
-  } else {
-    console.log('[voyager] VOYAGER_ADDRESS not set; skipping replication setup');
-  }
+  // const voyagerAddress = process.env.VOYAGER_ADDRESS;
+  // if (voyagerAddress) {
+  //   try {
+  //     const voyager = await Voyager({
+  //       orbitdb,
+  //       address: multiaddr(voyagerAddress),
+  //     });
+  //     await voyager.add(db.address);
+  //     console.log(`[voyager] registered ${db.address} for replication`);
+  //   } catch (err) {
+  //     console.error('[voyager] registration failed:', err);
+  //   }
+  // } else {
+  //   console.log('[voyager] VOYAGER_ADDRESS not set; skipping replication setup');
+  // }
 
   const app = express();
 
