@@ -39,6 +39,48 @@ Hot-patched both `~/decent-portfolio/v2-backend/node_modules/@orbitdb/core/src/d
 
 Upstream issue filed: https://github.com/orbitdb/orbitdb/issues/1253
 
+## Milestone 3 progress (2026-06-24)
+
+### ✅ Chunk 1: Relay-pinner as systemd service
+- Unit: ~/.config/systemd/user/relay-pinner.service (enabled)
+- Data dir: ~/relay-pinner-data/ (datastore, env file, peer-id.txt)
+- Env file: ~/relay-pinner-data/relay-pinner.env with RELAY_PRIV_KEY,
+  ports (TCP 9191, WS 9192, WebRTC 9193, QUIC 9194, Metrics 9290),
+  ENABLE_GENERAL_LOGS=1, ENABLE_SYNC_LOGS=1, DATASTORE_PATH
+- Persistent peer ID: 12D3KooWGhiz5y1AoddfkvtmWffZ82hYpcg94Wq7rx3wg5e9oeis
+- Verified: survives restart
+
+### 🟡 Chunk 2: Backend integration (partial)
+- server.js: dials relay-pinner via libp2p, then fires POST /pinning/sync
+  (fire-and-forget, 60s AbortController timeout)
+- Imports: node-fetch and @multiformats/multiaddr restored
+- libp2p-config.js: added pubsubPeerDiscovery service on
+  todo._peer-discovery._p2p._pubsub topic
+- Env vars: RELAY_PINNER_HTTP, RELAY_PINNER_MULTIADDR in backend .env
+- Verified: HTTP registration succeeds, relay-pinner's /pinning/databases
+  lists our address
+- 🟡 BUT: OrbitDB pubsub updates from backend don't reach relay-pinner.
+  When a new write hits backend, relay-pinner doesn't see the update event.
+  Both peers connected at libp2p level, both subscribed to OrbitDB topic.
+  Issue is gossipsub mesh formation specifically on the OrbitDB heads topic.
+
+### Open question for next session
+
+Why doesn't gossipsub mesh form on the OrbitDB heads topic between backend
+and relay-pinner?
+
+Two paths to investigate:
+1. Enable more gossipsub logging on backend side (DEBUG=libp2p:gossipsub:*)
+   to see what backend's gossipsub is doing
+2. Consider Mode 2: embed orbitdbReplicationService() directly in backend's
+   libp2p instead of running relay-pinner as a separate daemon — eliminates
+   the cross-process mesh formation entirely
+3. Ask on OrbitDB community channel (Nico Krause) about expected mesh
+   behavior between backend and relay-pinner peers
+
+### Chunk 3 (browser end-to-end): not started
+Will pick up after Chunk 2 is fully closed.
+
 ## Milestone 4 progress (2026-06-23)
 
 Frontend upgraded to `@orbitdb/core@3.0.2`. Same documents.js typo patched in 
