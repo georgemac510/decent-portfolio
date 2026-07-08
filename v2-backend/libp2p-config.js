@@ -6,6 +6,7 @@ import { noise } from '@chainsafe/libp2p-noise';
 import { yamux } from '@chainsafe/libp2p-yamux';
 import { identify } from '@libp2p/identify';
 import { gossipsub } from '@chainsafe/libp2p-gossipsub';
+import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
 
 export const libp2pOptions = {
   addresses: {
@@ -26,4 +27,11 @@ export const libp2pOptions = {
       emitSelf: true,
     }),
   },
+  peerDiscovery: [
+    pubsubPeerDiscovery({
+      // Same topic relay-pinner subscribes to (default).
+      // Enables backend and relay-pinner to discover each other organically.
+      topics: ['todo._peer-discovery._p2p._pubsub'],
+    }),
+  ],
 };

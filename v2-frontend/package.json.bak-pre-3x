@@ -1,0 +1,43 @@
+{
+  "name": "decent-portfolio-v2-frontend",
+  "version": "2.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@chainsafe/libp2p-gossipsub": "^14.1.2",
+    "@chainsafe/libp2p-noise": "^16.1.5",
+    "@chainsafe/libp2p-yamux": "^7.0.4",
+    "@libp2p/identify": "^3.0.39",
+    "@libp2p/websockets": "^9.2.19",
+    "@multiformats/multiaddr": "^12.5.1",
+    "@orbitdb/core": "^2.5.0",
+    "@orbitdb/simple-encryption": "^0.0.2",
+    "blockstore-level": "^2.0.5",
+    "datastore-level": "^11.0.4",
+    "helia": "^5.5.1",
+    "libp2p": "^2.10.0",
+    "next": "^16.2.6",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^9.16.0",
+    "eslint-config-next": "^16.2.6",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.16",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=20.9"
+  }
+}

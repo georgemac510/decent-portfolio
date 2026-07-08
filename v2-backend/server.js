@@ -11,8 +11,8 @@ import cors from 'cors';
 import { initOrbitDB } from './orbitdb.js';
 import { getPrices, SUPPORTED_ASSETS } from './prices.js';
 import { rateLimit } from './rate-limit.js';
+import fetch from 'node-fetch';
 import { multiaddr } from '@multiformats/multiaddr';
-// import { Voyager } from '@orbitdb/voyager';
 import { computePositions } from './lib/computePositions.js';
 
 const PORT = Number(process.env.PORT) || 3001;
@@ -34,25 +34,45 @@ const ALLOWED_ORIGINS = new Set([
 ]);
 
 async function main() {
-  const { db, orbitdb } = await initOrbitDB();
+  const { db, orbitdb, libp2p } = await initOrbitDB();
 
-  // Register the database with our local Voyager daemon for replication.
+  // Register the database with relay-pinner for replication.
+  // First dial relay-pinner over libp2p (so its sync has a connected peer to replicate from).
+  // Then fire the HTTP /pinning/sync trigger — fire-and-forget since it can take 30+ seconds.
+  const relayPinnerUrl = process.env.RELAY_PINNER_HTTP;
+  const relayPinnerMultiaddr = process.env.RELAY_PINNER_MULTIADDR;
+  if (relayPinnerUrl && relayPinnerMultiaddr) {
+    try {
+      await libp2p.dial(multiaddr(relayPinnerMultiaddr));
+      console.log(`[relay-pinner] dialed ${relayPinnerMultiaddr}`);
+    } catch (err) {
+      console.error('[relay-pinner] libp2p dial failed:', err.message);
+    }
 
-  // const voyagerAddress = process.env.VOYAGER_ADDRESS;
-  // if (voyagerAddress) {
-  //   try {
-  //     const voyager = await Voyager({
-  //       orbitdb,
-  //       address: multiaddr(voyagerAddress),
-  //     });
-  //     await voyager.add(db.address);
-  //     console.log(`[voyager] registered ${db.address} for replication`);
-  //   } catch (err) {
-  //     console.error('[voyager] registration failed:', err);
-  //   }
-  // } else {
-  //   console.log('[voyager] VOYAGER_ADDRESS not set; skipping replication setup');
-  // }
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000);
+    fetch(`${relayPinnerUrl}/pinning/sync`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ dbAddress: db.address.toString() }),
+      signal: controller.signal,
+    })
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.ok) {
+          console.log(`[relay-pinner] registered ${db.address} for replication`);
+        } else {
+          console.error('[relay-pinner] registration failed:', json.error);
+        }
+      })
+      .catch((err) => {
+        console.error('[relay-pinner] could not reach relay-pinner:', err.message);
+      })
+      .finally(() => clearTimeout(timeoutId));
+    console.log('[relay-pinner] registration initiated (async)');
+  } else {
+    console.log('[relay-pinner] RELAY_PINNER_HTTP or RELAY_PINNER_MULTIADDR not set; skipping replication setup');
+  }
 
   const app = express();
 

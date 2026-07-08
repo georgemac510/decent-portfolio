@@ -100,21 +100,36 @@ any pinning peer (Voyager registration commented out during Milestone 2;
 Milestone 3 will replace it with relay-pinner). The visible production page 
 still renders via HTTP fallback.
 
+## Strategic deferral note (2026-07-07)
+
+Milestone 3 (relay-pinner replacing Voyager) is intentionally paused, not abandoned.
+
+Rationale: priority is shifting to work on the LLM insight layer (Hyperliquid Info API
+integration + Claude reasoning + on-screen AI analyst) as the next visible feature.
+Milestone 3 is engineering hygiene — necessary for scale, but not a prerequisite for
+the insight layer to ship.
+
+Production impact of the pause: none. Backend serves via HTTP fallback; users see
+correct data. The gossipsub mesh gap is characterized and documented; resuming this
+work later starts from a clear problem statement.
+
+Revisit: after the insight layer (Phase E) is shipped.
+
 ## Milestones
 
 1. ✅ Get relay-pinner running locally in isolation
 2. ✅ Upgrade backend Decent Portfolio to core 3.x (in-place upgrade complete; Voyager removed from deps and commented out in server.js; backend writes and reads work under core 3.0.2)
-3. ⬜ Rewrite backend Voyager integration to use relay-pinner's HTTP `/pinning/*` API
-4. 🟡 Upgrade frontend to core 3.x (and apply same Documents patch)
+3. 🟡 Rewrite backend Voyager integration to use relay-pinner's HTTP `/pinning/*` API — Chunk 1 done, Chunk 2 partial (gossipsub mesh gap), Chunk 3 not started. **Deferred pending Phase E (LLM insight layer).** See "Strategic deferral" note below.
+4. 🟡 Upgrade frontend to core 3.x (mechanically complete, end-to-end validation deferred with Milestone 3)
 5. 🟡 Encryption working locally via hot-patch; needs upstream merge or local `patch-package` setup to survive `npm install`. Wrong-password test passes empirically on the live backend.
-6. ⬜ Production deployment: replace voyager.service with relay-pinner under systemd
+6. ⬜ Production deployment: replace voyager.service with relay-pinner under systemd — depends on Milestone 3 completion
 
 ## Open follow-ups
 
 - Open PR against `orbitdb/orbitdb` with the documents.js fix and a test case for simple-encryption mirroring its Events-store tests
 - Decide local-shipping strategy for the patch: `patch-package`, vendored fork, or wait for upstream merge
 - Frontend upgrade (Milestone 4) — needs the same blockstore-level/datastore-level version pinning and the same documents.js patch
-- Milestone 3 (relay-pinner replacing Voyager) — still pending; was deprioritized once core 3.x upgrade succeeded
+- Milestone 3 (relay-pinner replacing Voyager) — chunks 1 & 2 partial (see Milestone 3 progress and Strategic deferral note above). Chunk 3 not started.
 
 ## Local backups to clean up after upgrade is fully stable
 
