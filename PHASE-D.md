@@ -130,6 +130,7 @@ Revisit: after the insight layer (Phase E) is shipped.
 - Decide local-shipping strategy for the patch: `patch-package`, vendored fork, or wait for upstream merge
 - Frontend upgrade (Milestone 4) — needs the same blockstore-level/datastore-level version pinning and the same documents.js patch
 - Milestone 3 (relay-pinner replacing Voyager) — chunks 1 & 2 partial (see Milestone 3 progress and Strategic deferral note above). Chunk 3 not started.
+- Stack currency: Nico Krause's reference simple-todo example (July 2026) runs on OrbitDB 4 + Helia 7 + libp2p 3. Decent Portfolio is one major version behind on each. Not blocking, but a future consideration when returning to Milestone 3.
 
 ## Local backups to clean up after upgrade is fully stable
 
