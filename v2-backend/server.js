@@ -14,6 +14,7 @@ import { rateLimit } from './rate-limit.js';
 import fetch from 'node-fetch';
 import { multiaddr } from '@multiformats/multiaddr';
 import { computePositions } from './lib/computePositions.js';
+import { assembleContextBundle } from './lib/contextBundle.js';
 
 const PORT = Number(process.env.PORT) || 3001;
 
@@ -232,6 +233,20 @@ async function main() {
     } catch (err) {
       console.error('[positions] error:', err);
       res.status(500).json({ error: 'failed to compute positions' });
+    }
+  });
+
+  // Phase E Chunk 1 verification endpoint — returns the raw context bundle.
+  app.get('/api/insight/bundle', async (req, res) => {
+    const id = String(req.query.id || '');
+    if (!id) return res.status(400).json({ error: 'id required' });
+
+    try {
+      const bundle = await assembleContextBundle({ userId: id, db });
+      res.json(bundle);
+    } catch (err) {
+      console.error('[insight/bundle] error:', err);
+      res.status(500).json({ error: 'failed to assemble context bundle' });
     }
   });
 
