@@ -15,6 +15,7 @@ import fetch from 'node-fetch';
 import { multiaddr } from '@multiformats/multiaddr';
 import { computePositions } from './lib/computePositions.js';
 import { assembleContextBundle } from './lib/contextBundle.js';
+import { getInsight, ReasoningError } from './lib/reasoning.js';
 
 const PORT = Number(process.env.PORT) || 3001;
 
@@ -248,6 +249,52 @@ async function main() {
       console.error('[insight/bundle] error:', err);
       res.status(500).json({ error: 'failed to assemble context bundle' });
     }
+  });
+
+  // Phase E: full insight endpoint. Composes context assembly + reasoning.
+  const insightLimit = rateLimit({ category: 'insight', windowMs: 60_000, max: 5 });
+  app.post('/api/insight', insightLimit, async (req, res) => {
+    const origin = req.headers.origin;
+    if (origin && !ALLOWED_ORIGINS.has(origin)) {
+      return res.status(403).json({ error: 'origin not allowed' });
+    }
+
+    const userId = String(req.body?.userId || '').trim();
+    if (!userId) return res.status(400).json({ error: 'userId required' });
+
+    // 1. Assemble the context bundle.
+    let bundle;
+    try {
+      bundle = await assembleContextBundle({ userId, db });
+    } catch (err) {
+      console.error('[insight] context assembly failed:', err);
+      return res.status(503).json({ error: 'failed to assemble context bundle' });
+    }
+
+    // 2. Generate the insight.
+    let insight;
+    try {
+      insight = await getInsight(bundle);
+    } catch (err) {
+      if (err instanceof ReasoningError) {
+        console.error(`[insight] reasoning error (${err.code}):`, err.message);
+        if (err.code === 'CONFIG' || err.code === 'BAD_INPUT') {
+          return res.status(503).json({ error: 'reasoning layer misconfigured' });
+        }
+        // TIMEOUT and UPSTREAM
+        return res.status(502).json({ error: 'reasoning upstream error' });
+      }
+      console.error('[insight] unexpected error:', err);
+      return res.status(502).json({ error: 'reasoning failed' });
+    }
+
+    // 3. Return the shaped response.
+    res.json({
+      insight: insight.text,
+      generatedAt: bundle.generatedAt,
+      model: insight.model,
+      bundleVersion: bundle.bundleVersion,
+    });
   });
 
   app.listen(PORT, () => {
