@@ -69,14 +69,29 @@ export const api = {
       { signal }
     ),
 
-  addEntry: (payload: AddEntryPayload) =>
-    request<{ ok: boolean; hash: string; doc: Transaction }>(
-      '/api/add-entry',
-      {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      }
-    ),
-};
+    addEntry: (payload: AddEntryPayload) =>
+      request<{ ok: boolean; hash: string; doc: Transaction }>(
+        '/api/add-entry',
+        {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        }
+      ),
+  
+    insight: (userId: string, signal?: AbortSignal) =>
+      request<{
+        insight: string;
+        generatedAt: string;
+        model: string;
+        bundleVersion: string;
+      }>(
+        '/api/insight',
+        {
+          method: 'POST',
+          body: JSON.stringify({ userId }),
+          signal,
+        }
+      ),
+  };
 
 export { ApiError, API_BASE };

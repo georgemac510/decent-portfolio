@@ -7,6 +7,7 @@ import { PositionsTable } from '@/components/PositionsTable';
 import { PortfolioSummary } from '@/components/PortfolioSummary';
 import { UserIdInput } from '@/components/UserIdInput';
 import { usePositions } from '@/hooks/usePositions';
+import { PortfolioInsight } from '@/components/PortfolioInsight';
 
 export default function HomePage() {
   const [userId, setUserId] = useState('');
@@ -33,6 +34,7 @@ export default function HomePage() {
           <PortfolioSummary data={data} />
           <AddTransactionForm userId={userId} onSuccess={refresh} />
           <PositionsTable data={data} loading={loading} error={error} />
+          <PortfolioInsight userId={userId} />
         </>
       ) : (
         <div className="rounded-lg border border-white/10 bg-black/20 p-8 text-center text-white/80">
