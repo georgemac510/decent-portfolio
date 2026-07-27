@@ -15,7 +15,7 @@ import fetch from 'node-fetch';
 import { multiaddr } from '@multiformats/multiaddr';
 import { computePositions } from './lib/computePositions.js';
 import { assembleContextBundle } from './lib/contextBundle.js';
-import { getInsight, ReasoningError } from './lib/reasoning.js';
+import { getInsight, checkReasoningHealth, ReasoningError } from './lib/reasoning.js';
 
 const PORT = Number(process.env.PORT) || 3001;
 
@@ -38,6 +38,15 @@ const ALLOWED_ORIGINS = new Set([
 async function main() {
   const { db, orbitdb, libp2p } = await initOrbitDB();
 
+  // Reasoning layer health check — fail fast on missing/misconfigured API key.
+  try {
+    const health = await checkReasoningHealth();
+    console.log(`[reasoning] ready. model: ${health.model}`);
+  } catch (err) {
+    console.error('[reasoning] health check failed:', err.message);
+    console.error('[reasoning] /api/insight will return 503 until this is fixed');
+    // Don't exit — backend can still serve /api/positions and other endpoints
+  }
   // Register the database with relay-pinner for replication.
   // First dial relay-pinner over libp2p (so its sync has a connected peer to replicate from).
   // Then fire the HTTP /pinning/sync trigger — fire-and-forget since it can take 30+ seconds.
@@ -234,20 +243,6 @@ async function main() {
     } catch (err) {
       console.error('[positions] error:', err);
       res.status(500).json({ error: 'failed to compute positions' });
-    }
-  });
-
-  // Phase E Chunk 1 verification endpoint — returns the raw context bundle.
-  app.get('/api/insight/bundle', async (req, res) => {
-    const id = String(req.query.id || '');
-    if (!id) return res.status(400).json({ error: 'id required' });
-
-    try {
-      const bundle = await assembleContextBundle({ userId: id, db });
-      res.json(bundle);
-    } catch (err) {
-      console.error('[insight/bundle] error:', err);
-      res.status(500).json({ error: 'failed to assemble context bundle' });
     }
   });
 
