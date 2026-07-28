@@ -71,11 +71,12 @@ The backend runs on one box in a small homelab in my basement, alongside a few o
 ## Stack
 
 **Backend** (`v2-backend/`)
-- [`@orbitdb/core`](https://github.com/orbitdb/orbitdb) v2 — peer-to-peer document store with CRDT-based replication
+- [`@orbitdb/core`](https://github.com/orbitdb/orbitdb) v3 — peer-to-peer document store with CRDT-based replication
 - [`helia`](https://github.com/ipfs/helia) v5 — modern JavaScript IPFS implementation
 - [`libp2p`](https://github.com/libp2p/js-libp2p) v2 — peer-to-peer networking layer
 - [`@orbitdb/voyager`](https://github.com/orbitdb/voyager) — always-on pinning peer that replicates the database
 - Express + Node 20 — HTTP API the frontend calls
+- [`@anthropic-ai/sdk`](https://github.com/anthropics/anthropic-sdk-typescript) — reasoning layer for the AI Analyst feature (Claude Sonnet 5)
 - CoinGecko free tier — price feed, server-side cached for 60s
 
 **Frontend** (`v2-frontend/`)
@@ -99,6 +100,16 @@ The backend runs on one box in a small homelab in my basement, alongside a few o
 - Form-based BUY/SELL entry with client-side validation
 - Server-side rate limiting (per-IP sliding window), CORS allowlist, Origin checks on writes
 - Browser-side OrbitDB replica — positions read from local data, not from the server
+
+## AI Analyst
+
+The app includes an on-demand portfolio analysis feature: a user clicks "Analyze Portfolio" and the backend assembles a small structured summary of their current positions (cost basis, market value, unrealized PnL, 24h moves) and passes it to [Claude Sonnet 5](https://www.anthropic.com/claude/sonnet) via the Anthropic API. The response is a plain-prose analysis rendered inline in the UI.
+
+The reasoning layer is deliberately narrow. The prompt is operator-authored and not user-configurable, framing the output as observational analysis rather than advice. The model receives a per-request context bundle, not the raw OrbitDB oplog — no CIDs, no identity material, no historical transactions beyond what's reflected in the current position summary. Each response arrives with a visible disclaimer, the generation timestamp, and the model name.
+
+Rate limited to 5 requests per minute per IP. Each call runs about 700–1,100 tokens in and 300–500 tokens out — roughly half a cent at introductory Sonnet 5 pricing.
+
+The reasoning module is the only file in the backend that imports the Anthropic SDK, so swapping to a different model or moving to local inference in the future would be a single-file change.
 
 ## Running locally
 
@@ -130,6 +141,7 @@ OrbitDB persists its data under `v2-backend/data/`. The first run creates a new 
 | POST   | `/api/add-entry`      | Add a BUY/SELL transaction                       |
 | GET    | `/api/query/id?id=…`  | Transactions for a specific user                 |
 | GET    | `/api/positions?id=…` | Aggregated positions with live PnL for a user    |
+| POST   | `/api/insight`        | AI Analyst — returns natural-language portfolio analysis (Claude Sonnet 5) |
 
 With the browser-side replica active, `/api/positions` and `/api/query/id` are typically *not* hit — the frontend reads from local OrbitDB instead. They remain available as a fallback for clients that can't establish a WebSocket connection to Voyager (corporate firewalls, restrictive networks).
 
@@ -157,15 +169,11 @@ A few things I learned (or relearned the hard way) building this:
 ## Repository layout
 
 ```
-v2-backend/         # Express API + OrbitDB + Helia + Voyager (current backend)
-v2-frontend/        # Next.js 16 app with browser-side OrbitDB (current frontend, deployed to Vercel)
-front-end/          # v1 Next.js frontend (kept for reference; superseded)
-back-end/           # v1 backend
-orbitdb-db/         # v1 OrbitDB peer setup
-client-alternate/   # earlier v1 experiment
+v2-backend/         # Express API + OrbitDB + Helia + reasoning layer
+v2-frontend/        # Next.js 16 app with browser-side OrbitDB, deployed to Vercel
 ```
 
-The v1 directories are kept for historical context. Everything new goes in `v2-backend/` and `v2-frontend/`.
+The v1 tree (`front-end/`, `orbitdb-db/`, `client-alternate/`, and related) was removed on July 7, 2026. Git history preserves it for reference.
 
 ## License
 
