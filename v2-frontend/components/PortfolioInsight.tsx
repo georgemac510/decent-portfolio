@@ -42,6 +42,12 @@ export function PortfolioInsight({ userId }: Props) {
             placeholder="0x..."
             value={hyperliquidAddress}
             onChange={(e) => setHyperliquidAddress(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !loading) {
+                e.preventDefault();
+                generate(hyperliquidAddress);
+              }
+            }}
           />
         </label>
       </div>
