@@ -263,10 +263,19 @@ async function main() {
     const userId = String(req.body?.userId || '').trim();
     if (!userId) return res.status(400).json({ error: 'userId required' });
 
+    // Optional Hyperliquid address for perps exposure context.
+    const hyperliquidAddress = req.body?.hyperliquidAddress
+      ? String(req.body.hyperliquidAddress).trim()
+      : undefined;
+
     // 1. Assemble the context bundle.
     let bundle;
     try {
-      bundle = await assembleContextBundle({ userId, db });
+      bundle = await assembleContextBundle({
+        userId,
+        db,
+        options: { hyperliquidAddress },
+      });
     } catch (err) {
       console.error('[insight] context assembly failed:', err);
       return res.status(503).json({ error: 'failed to assemble context bundle' });

@@ -1,5 +1,4 @@
 'use client';
-
 import { useCallback, useRef, useState } from 'react';
 import { api } from '@/lib/api';
 
@@ -8,7 +7,6 @@ interface InsightData {
   generatedAt: string;
   model: string;
 }
-
 interface State {
   data: InsightData | null;
   error: string | null;
@@ -26,29 +24,32 @@ export function useInsight(userId: string | null) {
   });
   const abortRef = useRef<AbortController | null>(null);
 
-  const generate = useCallback(async () => {
-    if (!userId) return;
-
-    // Cancel any in-flight request before starting a new one.
-    abortRef.current?.abort();
-    const ac = new AbortController();
-    abortRef.current = ac;
-
-    setState({ data: null, error: null, loading: true });
-
-    try {
-      const data = await api.insight(userId, ac.signal);
-      if (ac.signal.aborted) return;
-      setState({ data, error: null, loading: false });
-    } catch (err) {
-      if (ac.signal.aborted) return;
-      setState({
-        data: null,
-        error: err instanceof Error ? err.message : 'insight generation failed',
-        loading: false,
-      });
-    }
-  }, [userId]);
+  const generate = useCallback(
+    async (hyperliquidAddress?: string) => {
+      if (!userId) return;
+      // Cancel any in-flight request before starting a new one.
+      abortRef.current?.abort();
+      const ac = new AbortController();
+      abortRef.current = ac;
+      setState({ data: null, error: null, loading: true });
+      try {
+        const data = await api.insight(userId, {
+          hyperliquidAddress: hyperliquidAddress?.trim() || undefined,
+          signal: ac.signal,
+        });
+        if (ac.signal.aborted) return;
+        setState({ data, error: null, loading: false });
+      } catch (err) {
+        if (ac.signal.aborted) return;
+        setState({
+          data: null,
+          error: err instanceof Error ? err.message : 'insight generation failed',
+          loading: false,
+        });
+      }
+    },
+    [userId]
+  );
 
   const reset = useCallback(() => {
     abortRef.current?.abort();

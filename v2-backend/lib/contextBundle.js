@@ -1,5 +1,6 @@
 import { computePositions } from './computePositions.js';
 import { getPrices } from '../prices.js';
+import { fetchHyperliquidState } from './hyperliquid.js';
 
 const BUNDLE_VERSION = '1.0';
 
@@ -10,19 +11,24 @@ const BUNDLE_VERSION = '1.0';
  * @param {Object} args
  * @param {string} args.userId - The user whose portfolio to summarize
  * @param {Object} args.db - The OrbitDB Documents instance (from initOrbitDB)
- * @param {Object} [args.options] - Reserved for later (e.g. hyperliquidAddress)
+ * @param {Object} [args.options] - Optional extras
+ * @param {string} [args.options.hyperliquidAddress] - EVM address to fetch perps state for
  * @returns {Promise<Object>} Bundle matching PHASE-E.md § "Context bundle spec"
  */
 export async function assembleContextBundle({ userId, db, options = {} }) {
   if (!userId) throw new Error('userId is required');
   if (!db) throw new Error('db is required');
-
   const generatedAt = new Date().toISOString();
 
-  // Fetch transactions and prices in parallel, matching /api/positions.
-  const [txs, prices] = await Promise.all([
+  // Fetch transactions, prices, and (optionally) Hyperliquid state in parallel.
+  // Hyperliquid fetch is best-effort — a failure returns null and the insight
+  // proceeds without perps context.
+  const [txs, prices, hyperliquid] = await Promise.all([
     db.query((doc) => doc.userId === userId),
     getPrices().catch(() => null),
+    options.hyperliquidAddress
+      ? fetchHyperliquidState(options.hyperliquidAddress)
+      : Promise.resolve(null),
   ]);
 
   // computePositions returns { userId, positions, totals, pricesAt }
@@ -65,7 +71,7 @@ export async function assembleContextBundle({ userId, db, options = {} }) {
       totals,
       positionCount: positions.length,
     },
-    hyperliquid: null,
+    hyperliquid,
     marketContext: {
       assetsCovered,
       priceSource: 'prices.js',

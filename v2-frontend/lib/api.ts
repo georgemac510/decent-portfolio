@@ -78,20 +78,28 @@ export const api = {
         }
       ),
   
-    insight: (userId: string, signal?: AbortSignal) =>
-      request<{
-        insight: string;
-        generatedAt: string;
-        model: string;
-        bundleVersion: string;
-      }>(
-        '/api/insight',
-        {
-          method: 'POST',
-          body: JSON.stringify({ userId }),
-          signal,
-        }
-      ),
-  };
+      insight: (
+        userId: string,
+        opts?: { hyperliquidAddress?: string; signal?: AbortSignal }
+      ) =>
+        request<{
+          insight: string;
+          generatedAt: string;
+          model: string;
+          bundleVersion: string;
+        }>(
+          '/api/insight',
+          {
+            method: 'POST',
+            body: JSON.stringify({
+              userId,
+              ...(opts?.hyperliquidAddress
+                ? { hyperliquidAddress: opts.hyperliquidAddress }
+                : {}),
+            }),
+            signal: opts?.signal,
+          }
+        ),
+};
 
 export { ApiError, API_BASE };
