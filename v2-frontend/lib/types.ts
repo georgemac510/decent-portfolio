@@ -15,7 +15,7 @@ export interface Transaction {
   quantity: number;
   price: number;
   date: string;          // user-supplied date (free-form)
-  rating: number | null;
+  fees: number | null;
   createdAt: string;     // ISO timestamp
 }
 
@@ -61,5 +61,5 @@ export interface AddEntryPayload {
   quantity: number;
   price: number;
   date: string;
-  rating?: number;
+  fees?: number;
 }

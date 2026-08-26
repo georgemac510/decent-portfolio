@@ -19,8 +19,8 @@ export function computePositions(userId, txs, prices = null) {
       const qty = sign * tx.quantity;
   
       if (sign > 0) {
-        // BUY: add to cost basis at trade price.
-        positions[a].costBasis += tx.quantity * tx.price;
+        const fees = tx.fees || 0;
+        positions[a].costBasis += tx.quantity * tx.price + fees;
         positions[a].quantity += qty;
       } else {
         // SELL: reduce quantity at the *current* avg cost.

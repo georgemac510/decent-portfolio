@@ -174,8 +174,14 @@ async function main() {
     if (!Number.isFinite(price) || price <= 0) {
       return res.status(400).json({ error: 'price must be a positive number' });
     }
-
-
+    // Fees are optional. When provided, must be a non-negative number (0 is fine).
+    let fees = null;
+    if (entry.fees !== undefined && entry.fees !== '') {
+      fees = Number(entry.fees);
+      if (!Number.isFinite(fees) || fees < 0) {
+        return res.status(400).json({ error: 'fees must be a non-negative number' });
+      }
+    }
     const txId = `${entry._id}:${asset}:${Date.now()}`;
     const doc = {
       _id: txId,
@@ -185,7 +191,7 @@ async function main() {
       quantity,
       price,
       date: String(entry.date),
-      rating: entry.rating !== undefined ? Number(entry.rating) : null,
+      fees,
       createdAt: new Date().toISOString(),
     };
 
